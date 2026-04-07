@@ -1,6 +1,6 @@
 <template>
     <DashboardLayout>
-        <h1>Profile Page</h1>
+        <h1>Help Page</h1>
     </DashboardLayout>
 </template>
 <script setup lang="ts">

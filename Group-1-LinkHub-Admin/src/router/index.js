@@ -35,29 +35,39 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path: '/degree',
-      name: 'degree',
+      path: '/degrees',
+      name: 'degrees',
       component: () => import('../views/DegreeView.vue'),
     },
     {
-      path: '/school',
-      name: 'school',
+      path: '/schools',
+      name: 'schools',
       component: () => import('../views/SchoolView.vue'),
     },
     {
-      path: '/skill',
-      name: 'skill',
+      path: '/skills',
+      name: 'skills',
       component: () => import('../views/SkillView.vue'),
     },
     {
-      path: '/subject',
-      name: 'subject',
+      path: '/subjects',
+      name: 'subjects',
       component: () => import('../views/SubjectView.vue'),
     },
     {
-      path: '/user',
-      name: 'user',
+      path: '/users',
+      name: 'users',
       component: () => import('../views/UserView.vue'),
+    },
+    {
+      path: '/help',
+      name: 'help',
+      component: () => import('../views/HelpView.vue'),
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('../views/DashboardView.vue'),
     },
     //Not Found Page
     {

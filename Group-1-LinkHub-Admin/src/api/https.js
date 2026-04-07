@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://novia2.csm.linkpc.net",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://novia2.csm.linkpc.net",
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",

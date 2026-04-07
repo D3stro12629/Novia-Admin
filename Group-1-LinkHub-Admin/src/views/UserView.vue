@@ -1,788 +1,399 @@
 <template>
-    <div class="dashboard-container">
-        <!-- Premium Header Section -->
-        <header class="dashboard-header">
-            <div class="header-left">
-                <h1 class="text-gradient">User Directory</h1>
-                <p class="text-subtitle">Manage your ecosystem and user permissions with precision.</p>
-            </div>
-
-            <div class="header-right">
-                <div class="search-wrapper">
-                    <i class="bi bi-search search-icon"></i>
-                    <input v-model="searchQuery" type="text" placeholder="Search users..." class="glass-input" />
-                </div>
-
-                <div class="filter-dropdown">
-                    <button class="glass-btn secondary">
-                        <i class="bi bi-filter"></i> Filters
-                    </button>
-                </div>
-
-                <div class="view-pill-toggle">
-                    <button :class="{ active: viewMode === 'grid' }" @click="viewMode = 'grid'">
-                        <i class="bi bi-grid-fill"></i>
-                    </button>
-                    <button :class="{ active: viewMode === 'table' }" @click="viewMode = 'table'">
-                        <i class="bi bi-list-ul"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Stats Section with Glow Effects -->
-        <section class="stats-overview">
-            <div class="stat-glass-card">
-                <div class="stat-icon-box blue-glow"><i class="bi bi-people"></i></div>
-                <div class="stat-content">
-                    <span class="stat-label">Total Users</span>
-                    <h2 class="stat-value">{{ userStore.pagination.total }}</h2>
-                </div>
-            </div>
-            <div class="stat-glass-card">
-                <div class="stat-icon-box green-glow"><i class="bi bi-person-check"></i></div>
-                <div class="stat-content">
-                    <span class="stat-label">Active Now</span>
-                    <h2 class="stat-value">{{ activeUsersCount }}</h2>
-                </div>
-            </div>
-            <div class="stat-glass-card">
-                <div class="stat-icon-box purple-glow"><i class="bi bi-lightning-charge"></i></div>
-                <div class="stat-content">
-                    <span class="stat-label">New (30d)</span>
-                    <h2 class="stat-value">{{ newUsersCount }}</h2>
-                </div>
-            </div>
-        </section>
-
-        <!-- Content Area -->
-        <main class="content-view">
-            <!-- Loading State -->
-            <div v-if="userStore.isLoading" class="skeleton-grid">
-                <div v-for="i in 8" :key="i" class="skeleton-card"></div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else-if="filteredUsers.length === 0" class="empty-state-container">
-                <div class="empty-illustration">
-                    <i class="bi bi-search"></i>
-                </div>
-                <h3>No users found</h3>
-                <p>Try adjusting your search or filters to find what you're looking for.</p>
-                <button class="glass-btn primary" @click="searchQuery = ''">Clear Search</button>
-            </div>
-
-            <!-- Grid View -->
-            <div v-else-if="viewMode === 'grid'" class="modern-user-grid">
-                <div v-for="user in filteredUsers" :key="user.id" class="user-profile-card" @click="viewUser(user)">
-                    <div class="card-header-gradient">
-                        <span class="status-dot" :class="user.id % 3 === 0 ? 'inactive' : 'active'"></span>
-                        <div class="card-actions">
-                            <button class="icon-only-btn"><i class="bi bi-three-dots"></i></button>
-                        </div>
+    <DashboardLayout>
+        <div class="app-shell" :class="{ 'is-loading': isLoading }">
+            <!-- 1. HEADER -->
+            <header class="admin-header">
+                <div class="header-content">
+                    <div class="title-stack">
+                        <h1>Directory <span class="count-chip" v-if="!isLoading">{{ userStore.pagination.total }}</span></h1>
                     </div>
 
-                    <div class="card-profile-body">
-                        <div class="avatar-floating-wrapper">
-                            <img :src="getAvatarUrl(user.avatar)" :alt="user.full_name" @error="handleImageError" />
+                    <div class="header-actions">
+                        <!-- FIXED SEARCH BOX -->
+                        <div class="search-wrapper">
+                            <i class="bi bi-search search-icon"></i>
+                            <input v-model="searchQuery" type="text" placeholder="Search members..." />
+                            <div class="search-shortcut">⌘K</div>
                         </div>
-                        <div class="user-meta">
-                            <h3>{{ user.full_name }}</h3>
-                            <p class="email">{{ user.email }}</p>
-                            <div class="badge-row">
-                                <span class="location-badge">
-                                    <i class="bi bi-geo-alt"></i> {{ user.current_city || 'Remote' }}
-                                </span>
+
+                        <div class="view-controls">
+                            <button :class="{ active: viewMode === 'grid' }" @click="viewMode = 'grid'"><i class="bi bi-grid-3x3-gap"></i></button>
+                            <button :class="{ active: viewMode === 'table' }" @click="viewMode = 'table'"><i class="bi bi-list-task"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 2. BENTO STATS -->
+            <section class="stats-row">
+                <template v-if="isLoading">
+                    <div v-for="i in 3" :key="'stat-s-' + i" class="stat-card skeleton">
+                        <div class="shimmer icon-ghost"></div>
+                        <div class="stat-ghost-info">
+                            <div class="shimmer line-sm"></div>
+                            <div class="shimmer line-lg"></div>
+                        </div>
+                    </div>
+                </template>
+                <template v-else>
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="bi bi-people-fill"></i></div>
+                        <div class="stat-data">
+                            <span class="label">Total Members</span>
+                            <span class="value">{{ userStore.pagination.total }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="bi bi-patch-check-fill"></i></div>
+                        <div class="stat-data">
+                            <span class="label">Active Now</span>
+                            <span class="value">{{ Math.floor(userStore.pagination.total * 0.4) }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="bi bi-lightning-fill"></i></div>
+                        <div class="stat-data">
+                            <span class="label">Growth</span>
+                            <span class="value">+12%</span>
+                        </div>
+                    </div>
+                </template>
+            </section>
+
+            <!-- 3. MAIN CONTENT -->
+            <main class="content-wrapper">
+                
+                <!-- GRID VIEW (STRICT 3 COLUMNS) -->
+                <div v-if="viewMode === 'grid'" class="grid-layout">
+                    <template v-if="isLoading">
+                        <div v-for="i in 6" :key="'grid-s-' + i" class="grid-card-skeleton">
+                            <div class="shimmer avatar-ghost"></div>
+                            <div class="shimmer line-name"></div>
+                            <div class="shimmer line-email"></div>
+                            <div class="grid-foot-skeleton">
+                                <div class="shimmer line-id"></div>
+                                <div class="shimmer line-btn"></div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="card-footer">
-                        <button class="view-profile-btn">View Profile <i class="bi bi-arrow-right-short"></i></button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table View -->
-            <div v-else class="modern-table-wrapper glass-panel">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Contact</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="user in filteredUsers" :key="user.id" class="table-row-hover">
-                            <td>
-                                <div class="table-user-cell">
-                                    <img :src="getAvatarUrl(user.avatar)" class="table-avatar"
-                                        @error="handleImageError" />
-                                    <div class="table-user-info">
-                                        <span class="name">{{ user.full_name }}</span>
-                                        <span class="id">ID: #{{ user.id }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ user.email }}</td>
-                            <td>{{ user.current_city || '-' }}</td>
-                            <td>
-                                <span :class="['status-pill', user.id % 3 === 0 ? 'inactive' : 'active']">
-                                    {{ user.id % 3 === 0 ? 'Offline' : 'Active' }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="table-actions">
-                                    <button class="action-icon-btn" @click.stop="viewUser(user)"><i
-                                            class="bi bi-eye"></i></button>
-                                    <button class="action-icon-btn"><i class="bi bi-pencil"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <footer class="modern-pagination">
-                <div class="pagination-info">
-                    Showing <span>{{ filteredUsers.length }}</span> of <span>{{ userStore.pagination.total }}</span>
-                    users
-                </div>
-                <div class="pagination-controls">
-                    <button :disabled="userStore.pagination.currentPage === 1"
-                        @click="changePage(userStore.pagination.currentPage - 1)" class="pagination-btn">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
-                    <div class="page-numbers">
-                        <span class="current-page">{{ userStore.pagination.currentPage }}</span>
-                    </div>
-                    <button :disabled="userStore.pagination.currentPage >= userStore.pagination.lastPage"
-                        @click="changePage(userStore.pagination.currentPage + 1)" class="pagination-btn">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
-                </div>
-            </footer>
-        </main>
-
-        <!-- Premium Profile Modal -->
-        <Transition name="modal-fade">
-            <div v-if="showViewModal" class="premium-modal-overlay" @click.self="showViewModal = false">
-                <div class="premium-modal-content">
-                    <button class="close-modal-btn" @click="showViewModal = false">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-
-                    <div class="modal-grid">
-                        <!-- Sidebar -->
-                        <div class="modal-sidebar">
-                            <div class="sidebar-user-card">
-                                <img :src="getAvatarUrl(selectedUser.avatar)" class="large-avatar" />
-                                <h2>{{ selectedUser.full_name }}</h2>
-                                <p>{{ selectedUser.email }}</p>
-                                <div class="social-links">
-                                    <button class="social-btn"><i class="bi bi-linkedin"></i></button>
-                                    <button class="social-btn"><i class="bi bi-github"></i></button>
-                                </div>
+                    </template>
+                    <template v-else>
+                        <div v-for="user in filteredUsers" :key="user.id" class="user-card" @click="viewUser(user)">
+                            <div class="card-status-dot online"></div>
+                            <div class="card-body">
+                                <img :src="getAvatarUrl(user.avatar)" @error="handleImageError" />
+                                <h3>{{ user.full_name }}</h3>
+                                <p>{{ user.email }}</p>
                             </div>
-                            <div class="quick-stats">
-                                <div class="q-stat">
-                                    <label>Joined</label>
-                                    <span>{{ formatDate(selectedUser.created_at) }}</span>
-                                </div>
-                                <div class="q-stat">
-                                    <label>Role</label>
-                                    <span>Collaborator</span>
-                                </div>
+                            <div class="card-footer">
+                                <span class="id-tag">ID #{{ user.id }}</span>
+                                <span class="view-link">View Profile <i class="bi bi-chevron-right"></i></span>
                             </div>
                         </div>
+                    </template>
+                </div>
 
-                        <!-- Details -->
-                        <div class="modal-main">
-                            <section class="info-section">
-                                <h4 class="section-title">Personal Information</h4>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <label>Full Name</label>
-                                        <p>{{ selectedUser.full_name }}</p>
-                                    </div>
-                                    <div class="info-item">
-                                        <label>Birthday</label>
-                                        <p>{{ formatDate(selectedUser.dob) }}</p>
-                                    </div>
-                                    <div class="info-item">
-                                        <label>Gender</label>
-                                        <p>{{ formatGender(selectedUser.gender) }}</p>
-                                    </div>
-                                    <div class="info-item">
-                                        <label>Hometown</label>
-                                        <p>{{ selectedUser.home_town || 'Not specified' }}</p>
-                                    </div>
-                                </div>
-                            </section>
+                <!-- TABLE VIEW -->
+                <div v-else class="table-container">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Member Name</th>
+                                <th>Email Contact</th>
+                                <th>Current Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-if="isLoading">
+                                <tr v-for="i in 8" :key="'table-s-' + i">
+                                    <td>
+                                        <div class="member-col-ghost">
+                                            <div class="shimmer mini-avatar"></div>
+                                            <div class="shimmer line-md"></div>
+                                        </div>
+                                    </td>
+                                    <td><div class="shimmer line-lg"></div></td>
+                                    <td><div class="shimmer badge-ghost"></div></td>
+                                    <td class="text-end"><div class="shimmer circle-ghost"></div></td>
+                                </tr>
+                            </template>
+                            <template v-else>
+                                <tr v-for="user in filteredUsers" :key="user.id" @click="viewUser(user)">
+                                    <td>
+                                        <div class="member-cell">
+                                            <img :src="getAvatarUrl(user.avatar)" @error="handleImageError" />
+                                            <span>{{ user.full_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="text-muted">{{ user.email }}</span></td>
+                                    <td><span class="status-badge">Active</span></td>
+                                    <td class="text-end"><i class="bi bi-chevron-right"></i></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
 
-                            <section class="info-section">
-                                <h4 class="section-title">Contact & Professional</h4>
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <label>Phone Number</label>
-                                        <p>{{ selectedUser.phone || '—' }}</p>
+            <!-- 4. MODAL -->
+            <Teleport to="body">
+                <Transition name="premium-modal">
+                    <div v-if="showViewModal && selectedUser" class="modal-overlay" @click.self="showViewModal = false">
+                        <div class="modal-surface">
+                            <aside class="modal-aside">
+                                <div class="aside-profile">
+                                    <div class="img-container">
+                                        <img :src="getAvatarUrl(selectedUser.avatar)" @error="handleImageError" />
                                     </div>
-                                    <div class="info-item full">
-                                        <label>Portfolio</label>
-                                        <a :href="selectedUser.portfolio_link" target="_blank" class="link-accent">
-                                            {{ selectedUser.portfolio_link || 'No portfolio linked' }}
-                                        </a>
-                                    </div>
+                                    <h2>{{ selectedUser.full_name }}</h2>
+                                    <p>User Account #{{ selectedUser.id }}</p>
                                 </div>
-                            </section>
+                                <div class="aside-meta">
+                                    <div class="meta-item"><i class="bi bi-envelope"></i> {{ selectedUser.email }}</div>
+                                    <div class="meta-item"><i class="bi bi-geo-alt"></i> {{ selectedUser.current_city || 'Location Hidden' }}</div>
+                                </div>
+                            </aside>
+                            <main class="modal-main">
+                                <div class="modal-header">
+                                    <h3>Account Overview</h3>
+                                    <button class="close-icon" @click="showViewModal = false"><i class="bi bi-x"></i></button>
+                                </div>
+                                <div class="data-grid">
+                                    <div class="data-box"><label>Full Name</label><p>{{ selectedUser.full_name }}</p></div>
+                                    <div class="data-box"><label>Date of Birth</label><p>{{ formatDate(selectedUser.dob) || '—' }}</p></div>
+                                    <div class="data-box"><label>Gender</label><p>{{ formatGender(selectedUser.gender) }}</p></div>
+                                    <div class="data-box"><label>Hometown</label><p>{{ selectedUser.home_town || '—' }}</p></div>
+                                    <div class="data-box full"><label>Portfolio Website</label><p class="link">{{ selectedUser.portfolio_link || 'No link provided' }}</p></div>
+                                </div>
+                                <div class="modal-actions">
+                                    <button class="btn-close" @click="showViewModal = false">Close Profile</button>
+                                </div>
+                            </main>
                         </div>
                     </div>
-                </div>
-            </div>
-        </Transition>
-    </div>
+                </Transition>
+            </Teleport>
+        </div>
+    </DashboardLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/users'
+import DashboardLayout from '@/layouts/DashboardLayout.vue'
 
+const isLoading = ref(true)
 const userStore = useUserStore()
 const viewMode = ref('grid')
 const showViewModal = ref(false)
 const selectedUser = ref(null)
 const searchQuery = ref('')
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://novia2.csm.linkpc.net'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://novia2.csm.linkpc.net'
 
 onMounted(async () => {
-    await userStore.fetchUsers(1)
+    isLoading.value = true
+    try {
+        await userStore.fetchUsers(1)
+    } finally {
+        setTimeout(() => isLoading.value = false, 1000)
+    }
 })
+
+watch(showViewModal, (val) => document.body.style.overflow = val ? 'hidden' : '')
+onUnmounted(() => document.body.style.overflow = '')
 
 const filteredUsers = computed(() => {
     if (!searchQuery.value) return userStore.users
-    const query = searchQuery.value.toLowerCase()
-    return userStore.users.filter(u =>
-        u.full_name.toLowerCase().includes(query) ||
-        u.email.toLowerCase().includes(query)
-    )
+    const q = searchQuery.value.toLowerCase()
+    return userStore.users.filter(u => u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q))
 })
 
-const activeUsersCount = computed(() => Math.floor(userStore.pagination.total * 0.85)) // Mock active count
-
-const newUsersCount = computed(() => {
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    return userStore.users.filter(u => new Date(u.created_at) > thirtyDaysAgo).length
-})
-
-const getAvatarUrl = (avatar) => {
-    if (!avatar || avatar === 'no_photo.jpg') return '/images/avatar/avatar-illustrated-01.png'
-    return `${API_BASE_URL}/storage/avatars/${avatar}`
-}
-
-const viewUser = (user) => {
-    selectedUser.value = user
-    showViewModal.value = true
-}
-
-const changePage = (page) => {
-    userStore.fetchUsers(page)
-}
-
-const formatDate = (date) => {
-    if (!date) return 'N/A'
-    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-const formatGender = (gender) => {
-    if (gender === 1) return 'Male'
-    if (gender === 2) return 'Female'
-    return 'Other'
-}
-
-const handleImageError = (e) => {
-    e.target.src = '/images/avatar/avatar-illustrated-01.png'
-}
+const viewUser = (u) => { selectedUser.value = u; showViewModal.value = true }
+const getAvatarUrl = (a) => (!a || a === 'no_photo.jpg') ? `https://ui-avatars.com/api/?name=User&background=4f46e5&color=fff` : `${API_BASE_URL}/storage/avatars/${a}`
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null
+const formatGender = (g) => g == 1 ? 'Male' : g == 2 ? 'Female' : 'Other'
+const handleImageError = (e) => e.target.src = 'https://ui-avatars.com/api/?name=User&background=4f46e5&color=fff'
 </script>
 
 <style scoped>
-/* Theme Variables */
-:offset {
-    --bg-main: #0a0a0c;
-    --bg-card: rgba(22, 22, 26, 0.7);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --accent-primary: #6366f1;
-    --accent-glow: rgba(99, 102, 241, 0.3);
-    --text-main: #f1f1f3;
-    --text-muted: #94a3b8;
-    --glass-effect: blur(12px) saturate(180%);
-}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-.dashboard-container {
-    padding: 2rem;
-    background-color: var(--bg-main);
-    min-height: 100vh;
+.app-shell {
+    --bg: #09090b;
+    --surface: #121215;
+    --border: #27272a;
+    --accent: #6366f1;
+    --text-main: #fafafa;
+    --text-muted: #a1a1aa;
+    
+    background: var(--bg);
     color: var(--text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    padding: 2.5rem;
 }
 
-/* Header & Search */
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2.5rem;
-    gap: 2rem;
-}
-
-.text-gradient {
-    background: linear-gradient(to right, #fff, #94a3b8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 1.875rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-}
-
-.text-subtitle {
-    color: var(--text-muted);
-    margin-top: 0.25rem;
-}
-
-.header-right {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.search-wrapper {
-    position: relative;
-    width: 300px;
-}
-
-.search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-}
-
-.glass-input {
-    width: 100%;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 0.6rem 1rem 0.6rem 2.8rem;
-    color: white;
-    transition: all 0.2s ease;
-}
-
-.glass-input:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 4px var(--accent-glow);
-}
-
-/* View Toggle Pill */
-.view-pill-toggle {
-    display: flex;
-    background: var(--bg-card);
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-}
-
-.view-pill-toggle button {
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.view-pill-toggle button.active {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-/* Stats Cards */
-.stats-overview {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-}
-
-.stat-glass-card {
-    background: var(--bg-card);
-    backdrop-filter: var(--glass-effect);
-    border: 1px solid var(--border-color);
-    padding: 1.5rem;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    transition: transform 0.3s ease;
-}
-
-.stat-glass-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-icon-box {
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
-
-.blue-glow {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
-}
-
-.green-glow {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
-}
-
-.purple-glow {
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
-}
-
-/* Modern Grid Cards */
-.modern-user-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-}
-
-.user-profile-card {
-    background: var(--bg-card);
-    backdrop-filter: var(--glass-effect);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-}
-
-.user-profile-card:hover {
-    transform: scale(1.02);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-.card-header-gradient {
-    height: 80px;
-    background: linear-gradient(135deg, #1e1e24 0%, #334155 100%);
-    position: relative;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-}
-
-.status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid var(--bg-main);
-}
-
-.status-dot.active {
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
-}
-
-.status-dot.inactive {
-    background: #64748b;
-}
-
-.avatar-floating-wrapper {
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
-    padding: 4px;
-    background: var(--bg-main);
-    margin: -42px auto 0;
-    position: relative;
-    z-index: 2;
-}
-
-.avatar-floating-wrapper img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.card-profile-body {
-    padding: 1.5rem;
-    text-align: center;
-}
-
-.user-meta h3 {
-    font-size: 1.125rem;
-    margin: 0.5rem 0 0.25rem;
-}
-
-.user-meta .email {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-}
-
-.location-badge {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.card-footer {
-    padding: 1rem;
-    border-top: 1px solid var(--border-color);
-    text-align: center;
-}
-
-.view-profile-btn {
-    background: transparent;
-    border: none;
-    color: var(--accent-primary);
-    font-weight: 600;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-/* Modern Table */
-.glass-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.modern-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.modern-table th {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 1rem 1.5rem;
-    text-align: left;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-}
-
-.modern-table td {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.table-user-cell {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.table-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-}
-
-.table-user-info .name {
-    display: block;
-    font-weight: 600;
-}
-
-.table-user-info .id {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.status-pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.status-pill.active {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-}
-
-.status-pill.inactive {
-    background: rgba(148, 163, 184, 0.1);
-    color: #94a3b8;
-}
-
-/* Modal Design */
-.premium-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 2rem;
-}
-
-.premium-modal-content {
-    background: #111114;
-    width: 100%;
-    max-width: 900px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    position: relative;
-    overflow: hidden;
-    animation: slideUp 0.4s ease-out;
-}
-
-.modal-grid {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-}
-
-.modal-sidebar {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 3rem 2rem;
-    border-right: 1px solid var(--border-color);
-    text-align: center;
-}
-
-.large-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 32px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.modal-main {
-    padding: 3rem;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.info-section {
-    margin-bottom: 2.5rem;
-}
-
-.section-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--accent-primary);
-    letter-spacing: 0.1em;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-}
-
-.info-item label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-bottom: 0.25rem;
-}
-
-.info-item p {
-    font-weight: 500;
-}
-
-.info-item.full {
-    grid-column: span 2;
-}
-
-/* Animations */
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-    transition: opacity 0.3s ease;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-    opacity: 0;
-}
-
-/* Loading Skeleton */
-.skeleton-card {
-    height: 300px;
-    background: linear-gradient(90deg, var(--bg-card) 25%, #1e1e24 50%, var(--bg-card) 75%);
+/* --- SHIMMER EFFECT --- */
+.shimmer {
+    background: #1c1c21;
+    background-image: linear-gradient(90deg, #1c1c21 0px, #2a2a32 40px, #1c1c21 80px);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 20px;
+    animation: shimmer-anim 1.5s infinite linear;
+    border-radius: 6px;
+}
+@keyframes shimmer-anim {
+    0% { background-position: -150% 0; }
+    100% { background-position: 150% 0; }
 }
 
-@keyframes shimmer {
-    0% {
-        background-position: 200% 0;
-    }
+/* --- HEADER & SEARCH --- */
+.admin-header { margin-bottom: 2.5rem; }
+.header-content { display: flex; justify-content: space-between; align-items: flex-end; }
+.title-stack h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -2px; display: flex; align-items: center; gap: 1rem; }
+.count-chip { font-size: 0.9rem; background: #1c1c21; padding: 4px 12px; border-radius: 20px; color: var(--text-muted); border: 1px solid var(--border); letter-spacing: 0; }
 
-    100% {
-        background-position: -200% 0;
-    }
+.search-wrapper { 
+    position: relative; 
+    background: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: 14px; 
+    width: 380px;
+    display: flex;
+    align-items: center;
+}
+.search-icon { position: absolute; left: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+.search-wrapper input { 
+    width: 100%;
+    background: transparent; 
+    border: none; 
+    color: white; 
+    padding: 0.8rem 3.5rem 0.8rem 2.8rem;
+    outline: none; 
+    font-size: 0.9rem; 
+}
+.search-shortcut { 
+    position: absolute; 
+    right: 0.8rem; 
+    background: #27272a; 
+    color: #71717a; 
+    padding: 2px 6px; 
+    border-radius: 5px; 
+    font-size: 0.7rem; 
+    font-weight: 700; 
+    border: 1px solid #3f3f46;
 }
 
-@media (max-width: 992px) {
-    .dashboard-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+.view-controls { display: flex; background: var(--surface); padding: 4px; border-radius: 14px; border: 1px solid var(--border); margin-left: 1rem; }
+.view-controls button { background: transparent; border: none; color: var(--text-muted); width: 44px; height: 38px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+.view-controls button.active { background: #27272a; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.header-actions { display: flex; align-items: center; }
 
-    .search-wrapper {
-        width: 100%;
-    }
+/* --- BENTO STATS --- */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem; }
+.stat-icon { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+.stat-icon.blue { background: rgba(99, 102, 241, 0.1); color: var(--accent); }
+.stat-icon.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.stat-icon.purple { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+.stat-data .label { display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+.stat-data .value { font-size: 1.75rem; font-weight: 800; letter-spacing: -1px; }
 
-    .stats-overview {
-        grid-template-columns: 1fr;
-    }
-
-    .modal-grid {
-        grid-template-columns: 1fr;
-    }
+/* --- STRICT 3-COLUMN GRID --- */
+.grid-layout { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); /* FORCED 3 COLUMNS */
+    gap: 1.5rem; 
 }
+.user-card { background: var(--surface); border: 1px solid var(--border); border-radius: 32px; padding: 2rem; cursor: pointer; transition: 0.4s cubic-bezier(0.2, 1, 0.2, 1); position: relative; }
+.user-card:hover { border-color: var(--accent); transform: translateY(-8px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5); background: #16161a; }
+.card-status-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; position: absolute; top: 25px; right: 25px; box-shadow: 0 0 15px #22c55e; }
+
+.card-body { text-align: center; margin-bottom: 2.5rem; }
+.card-body img { width: 100px; height: 100px; border-radius: 35px; object-fit: cover; margin-bottom: 1.5rem; border: 5px solid #1c1c21; }
+.card-body h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+.card-body p { color: var(--text-muted); font-size: 0.85rem; }
+
+.card-footer { border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+.id-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+.view-link { font-size: 0.8rem; font-weight: 800; color: var(--accent); opacity: 0; transform: translateX(-10px); transition: 0.3s; }
+.user-card:hover .view-link { opacity: 1; transform: translateX(0); }
+
+/* --- TABLE --- */
+.table-container { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; overflow: hidden; }
+.premium-table { width: 100%; border-collapse: collapse; }
+.premium-table th { background: rgba(255, 255, 255, 0.02); text-align: left; padding: 1.25rem 1.5rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); font-weight: 800; border-bottom: 1px solid var(--border); }
+.premium-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+.premium-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+.member-cell { display: flex; align-items: center; gap: 1rem; font-weight: 700; }
+.member-cell img { width: 42px; height: 42px; border-radius: 12px; }
+.status-badge { background: rgba(34, 197, 94, 0.1); color: #34d399; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid rgba(34, 197, 94, 0.1); }
+
+/* --- GHOST SKELETONS --- */
+.icon-ghost { width: 52px; height: 52px; border-radius: 16px; }
+.stat-ghost-info { display: flex; flex-direction: column; gap: 8px; }
+.line-sm { width: 60px; height: 10px; }
+.line-lg { width: 100px; height: 20px; }
+
+.grid-card-skeleton { background: var(--surface); padding: 2rem; border-radius: 32px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; }
+.avatar-ghost { width: 100px; height: 100px; border-radius: 35px; margin-bottom: 2rem; }
+.line-name { width: 60%; height: 18px; margin-bottom: 10px; }
+.line-email { width: 40%; height: 14px; margin-bottom: 2.5rem; }
+.grid-foot-skeleton { width: 100%; display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.line-id { width: 40px; height: 10px; }
+.line-btn { width: 80px; height: 10px; }
+
+.member-col-ghost { display: flex; align-items: center; gap: 1rem; }
+.mini-avatar { width: 42px; height: 42px; border-radius: 12px; }
+.line-md { width: 130px; height: 14px; }
+.badge-ghost { width: 80px; height: 26px; border-radius: 8px; }
+.circle-ghost { width: 18px; height: 18px; border-radius: 50%; margin-left: auto; }
+
+/* --- MODAL --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
+.modal-surface { background: #09090b; border: 1px solid var(--border); border-radius: 40px; width: 100%; max-width: 950px; display: grid; grid-template-columns: 320px 1fr; overflow: hidden; box-shadow: 0 50px 100px rgba(0,0,0,0.8); }
+.modal-aside { background: #121216; border-right: 1px solid var(--border); padding: 4rem 2.5rem; text-align: center; }
+.aside-profile .img-container img { width: 140px; height: 140px; border-radius: 50px; border: 6px solid #1c1c21; margin-bottom: 2rem; }
+.aside-profile h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -1px; }
+.aside-profile p { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; }
+.aside-meta { margin-top: 3rem; text-align: left; display: flex; flex-direction: column; gap: 1rem; }
+.meta-item { background: #09090b; padding: 1rem; border-radius: 16px; font-size: 0.85rem; display: flex; gap: 12px; color: var(--text-muted); border: 1px solid var(--border); }
+.meta-item i { color: var(--accent); }
+
+.modal-main { padding: 4rem; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+.modal-header h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted); font-weight: 800; }
+.close-icon { background: #1c1c21; border: none; color: white; width: 44px; height: 44px; border-radius: 14px; cursor: pointer; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; }
+
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.data-box { background: #121216; border: 1px solid var(--border); padding: 1.5rem; border-radius: 20px; }
+.data-box label { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; margin-bottom: 0.6rem; letter-spacing: 1.5px; }
+.data-box p { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.data-box.full { grid-column: span 2; }
+.link { color: var(--accent); }
+
+.modal-actions { margin-top: 3.5rem; display: flex; justify-content: flex-end; }
+.btn-close { background: var(--accent); color: white; border: none; padding: 1.2rem 3rem; border-radius: 18px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+.btn-close:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4); }
+
+@media (max-width: 1100px) {
+    .grid-layout { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 900px) {
+    .modal-surface { grid-template-columns: 1fr; max-height: 90vh; overflow-y: auto; }
+    .modal-aside { border-right: none; border-bottom: 1px solid var(--border); }
+    .stats-row { grid-template-columns: 1fr; }
+    .grid-layout { grid-template-columns: 1fr; }
+    .header-content { flex-direction: column; align-items: stretch; gap: 2rem; }
+    .search-wrapper { width: 100%; }
+}
+
+.premium-modal-enter-active, 
+.premium-modal-leave-active 
+{ transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1); }
+
+.premium-modal-enter-from, 
+.premium-modal-leave-to 
+{ opacity: 0; transform: scale(0.9) translateY(40px); }
 </style>
