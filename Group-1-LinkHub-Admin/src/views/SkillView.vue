@@ -14,7 +14,6 @@
             </h1>
             <p class="subtitle-text">Define and manage core competencies for the platform</p>
           </div>
-
           <div class="header-actions">
             <div class="action-group">
               <div class="search-wrapper">
