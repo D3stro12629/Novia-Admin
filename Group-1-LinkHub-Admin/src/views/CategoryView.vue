@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div class="premium-shell" :class="{ 'is-loading': categoryStore.isLoading }">
       
-      <!-- 1. HEADER SECTION (UNCHANGED) -->
+      <!-- 1. HEADER SECTION -->
       <header class="admin-header">
         <div class="header-content">
           <div class="title-stack">
@@ -31,14 +31,14 @@
         </div>
       </header>
 
-      <!-- 2. BENTO STATS SECTION (UNCHANGED) -->
+      <!-- 2. BENTO STATS SECTION -->
       <section class="stats-row">
         <template v-if="categoryStore.isLoading">
-          <div v-for="i in 3" :key="'stat-s-' + i" class="stat-card skeleton">
-            <div class="shimmer icon-ghost"></div>
-            <div class="stat-ghost-info">
-              <div class="shimmer line-sm"></div>
-              <div class="shimmer line-lg"></div>
+          <div v-for="i in 3" :key="'stat-s-' + i" class="stat-card">
+            <BaseSkeleton width="56px" height="56px" radius="18px" />
+            <div class="stat-data">
+              <BaseSkeleton width="60px" height="12px" radius="4px" style="margin-bottom: 8px; display: block;" />
+              <BaseSkeleton width="40px" height="24px" radius="6px" />
             </div>
           </div>
         </template>
@@ -67,7 +67,7 @@
         </template>
       </section>
 
-      <!-- 3. MAIN TABLE SECTION (UNCHANGED) -->
+      <!-- 3. MAIN TABLE SECTION -->
       <main class="content-wrapper">
         <div class="table-container">
           <table class="premium-table">
@@ -83,16 +83,20 @@
             <tbody>
               <template v-if="categoryStore.isLoading">
                 <tr v-for="i in 6" :key="'table-s-' + i">
-                  <td><div class="shimmer line-id-ghost"></div></td>
+                  <td><BaseSkeleton width="40px" height="16px" /></td>
                   <td>
-                    <div class="member-col-ghost">
-                      <div class="shimmer mini-avatar"></div>
-                      <div class="shimmer line-md"></div>
+                    <div class="member-cell">
+                      <BaseSkeleton width="44px" height="44px" radius="12px" />
+                      <BaseSkeleton width="150px" height="16px" />
                     </div>
                   </td>
-                  <td><div class="shimmer badge-ghost"></div></td>
-                  <td><div class="shimmer line-lg"></div></td>
-                  <td class="text-end"><div class="shimmer circle-ghost"></div></td>
+                  <td><BaseSkeleton width="80px" height="24px" radius="10px" /></td>
+                  <td><BaseSkeleton width="100px" height="16px" /></td>
+                  <td class="text-end">
+                    <div class="action-btns">
+                      <BaseSkeleton v-for="b in 3" :key="b" width="36px" height="36px" radius="10px" />
+                    </div>
+                  </td>
                 </tr>
               </template>
               <template v-else>
@@ -134,50 +138,40 @@
               </p>
             </div>
             <div class="pagination-right">
-              <div class="custom-pagination-wrapper">
-                <BasePagination 
-                  v-model:page="currentPage" 
-                  :per-page="itemsPerPage" 
-                  :total-items="totalEntries" 
-                />
-              </div>
+              <BasePagination v-model:page="currentPage" :per-page="itemsPerPage" :total-items="totalEntries" />
             </div>
           </footer>
         </div>
       </main>
 
-      <!-- 5. COMPACT MODALS (UPDATED) -->
+      <!-- 4. MODALS (FORM, DETAILS, DELETE) -->
       <Teleport to="body">
-        <!-- FORM MODAL (CREATE / EDIT) -->
+        <!-- FORM MODAL -->
         <Transition name="premium-modal">
           <div v-if="showFormModal" class="modal-overlay" @click.self="showFormModal = false">
             <div class="modal-surface compact-modal">
               <div class="modal-banner compact"></div>
               <button class="close-btn" @click="showFormModal = false"><i class="bi bi-x"></i></button>
-              
               <div class="modal-content compact-padding">
                 <div class="modal-header-clean">
-                  <div class="icon-circle compact">
-                     <img v-if="imagePreview" :src="imagePreview" class="circle-img-preview" @click="triggerFileInput" />
-                     <i v-else class="bi bi-cloud-arrow-up-fill" @click="triggerFileInput"></i>
+                  <div class="icon-circle compact" @click="triggerFileInput">
+                     <img v-if="imagePreview" :src="imagePreview" class="circle-img-preview" />
+                     <i v-else class="bi bi-cloud-arrow-up-fill"></i>
                   </div>
                   <h2>{{ isEditing ? 'Update Category' : 'Add Category' }}</h2>
                 </div>
-
                 <div class="form-body">
                   <div class="input-group-custom">
                     <label>Category Name</label>
                     <input v-model="form.name" placeholder="e.g. Science Department" :class="{ 'has-error': errors.name }" @blur="validate('name')" />
                     <span v-if="errors.name" class="error-msg">{{ errors.name }}</span>
                   </div>
-                  
                   <div class="image-upload-zone" @click="triggerFileInput">
                     <i class="bi bi-image me-2"></i>
                     <span>{{ form.image ? 'Change Image' : 'Upload Image' }}</span>
                   </div>
                   <input ref="fileInput" type="file" accept="image/*" @change="handleImageUpload" style="display: none" />
                 </div>
-
                 <div class="modal-footer-refined">
                   <button class="btn-secondary" @click="showFormModal = false">Cancel</button>
                   <button class="btn-primary" :disabled="categoryStore.isProcessing" @click="saveCategory">
@@ -190,43 +184,12 @@
           </div>
         </Transition>
 
-        <!-- DETAILS MODAL -->
-        <Transition name="premium-modal">
-          <div v-if="showDetailsModal" class="modal-overlay" @click.self="showDetailsModal = false">
-            <div class="modal-surface compact-modal">
-              <div class="modal-banner compact detail"></div>
-              <button class="close-btn" @click="showDetailsModal = false"><i class="bi bi-x"></i></button>
-              
-              <div class="modal-content compact-padding">
-                <div class="modal-header-clean">
-                  <div class="icon-circle compact detail">
-                    <img v-if="selectedItem?.image" :src="selectedItem.image" class="circle-img-preview" />
-                    <i v-else class="bi bi-info-circle-fill"></i>
-                  </div>
-                  <h2>Details</h2>
-                </div>
-
-                <div class="info-grid-simple">
-                  <div class="info-box full"><label>Full Name</label><p class="large-text">{{ selectedItem?.name }}</p></div>
-                  <div class="info-box"><label>Status</label><p><span class="status-pill" :class="getStatusClass(selectedItem?.status)">{{ selectedItem?.status || 'Active' }}</span></p></div>
-                  <div class="info-box"><label>Created At</label><p class="date-visible">{{ formatDate(selectedItem?.created_at) }}</p></div>
-                </div>
-
-                <div class="modal-footer-refined">
-                  <button class="btn-secondary full-width" @click="showDetailsModal = false">Dismiss</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Transition>
-
         <!-- DELETE MODAL -->
         <Transition name="premium-modal">
           <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
             <div class="modal-surface compact-modal">
               <div class="modal-banner compact danger"></div>
               <button class="close-btn" @click="showDeleteModal = false"><i class="bi bi-x"></i></button>
-              
               <div class="modal-content compact-padding">
                 <div class="modal-header-clean">
                   <div class="icon-circle compact danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
@@ -243,6 +206,33 @@
             </div>
           </div>
         </Transition>
+
+        <!-- DETAILS MODAL -->
+        <Transition name="premium-modal">
+          <div v-if="showDetailsModal" class="modal-overlay" @click.self="showDetailsModal = false">
+            <div class="modal-surface compact-modal">
+              <div class="modal-banner compact detail"></div>
+              <button class="close-btn" @click="showDetailsModal = false"><i class="bi bi-x"></i></button>
+              <div class="modal-content compact-padding">
+                <div class="modal-header-clean">
+                  <div class="icon-circle compact detail">
+                    <img v-if="selectedItem?.image" :src="selectedItem.image" class="circle-img-preview" />
+                    <i v-else class="bi bi-info-circle-fill"></i>
+                  </div>
+                  <h2>Details</h2>
+                </div>
+                <div class="info-grid-simple">
+                  <div class="info-box full"><label>Full Name</label><p class="large-text">{{ selectedItem?.name }}</p></div>
+                  <div class="info-box"><label>Status</label><p><span class="status-pill status-active">{{ selectedItem?.status || 'Active' }}</span></p></div>
+                  <div class="info-box"><label>Created At</label><p class="date-visible">{{ formatDate(selectedItem?.created_at) }}</p></div>
+                </div>
+                <div class="modal-footer-refined">
+                  <button class="btn-secondary full-width" @click="showDetailsModal = false">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
       </Teleport>
 
     </div>
@@ -251,21 +241,22 @@
 
 <script setup>
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import BaseSkeleton from '@/components/ui/base/BaseSkeleton.vue'
+import BasePagination from '@/components/ui/base/BasePagination.vue'
 import { ref, computed, onMounted, reactive, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCategoryStore } from '@/stores/categories'
-import BasePagination from '@/components/ui/base/BasePagination.vue'
 import { useFormValidation, validationRules } from '@/composables/useFormValidation'
 import { useToast } from '@/composables/useToast'
 
-// --- STATE ---
 const categoryStore = useCategoryStore()
 const route = useRoute()
 const toast = useToast()
+
+// STATE
 const searchQuery = ref('')
 const showFormModal = ref(false), showDetailsModal = ref(false), showDeleteModal = ref(false)
 const isEditing = ref(false), selectedItem = ref(null), currentPage = ref(1), itemsPerPage = ref(10)
-
 const form = reactive({ name: '', image: null })
 const imagePreview = ref(null)
 const fileInput = ref(null)
@@ -274,29 +265,25 @@ const { errors, validateField: validate, validate: validateAll, reset: resetVali
     name: [validationRules.required('Category name is required'), validationRules.maxLength(255)]
 })
 
-// --- COMPUTEDS ---
+// COMPUTEDS
 const totalEntries = computed(() => filteredCategories.value.length)
 const showingStart = computed(() => totalEntries.value === 0 ? 0 : (currentPage.value - 1) * itemsPerPage.value + 1)
 const showingEnd = computed(() => Math.min(currentPage.value * itemsPerPage.value, totalEntries.value))
-
-const activeCount = computed(() => (categoryStore.categories || []).filter(s => !s.status || s.status === 'Active').length)
+const activeCount = computed(() => (categoryStore.categories || []).length)
 const newlyAddedCount = computed(() => {
-    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    return (categoryStore.categories || []).filter(s => new Date(s.created_at || Date.now()) > sevenDaysAgo).length
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+    return (categoryStore.categories || []).filter(c => new Date(c.created_at) > weekAgo).length
 })
-
 const filteredCategories = computed(() => {
     if (!searchQuery.value) return categoryStore.categories || []
-    const q = searchQuery.value.toLowerCase()
-    return (categoryStore.categories || []).filter(c => c.name.toLowerCase().includes(q))
+    return (categoryStore.categories || []).filter(c => c.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
 })
-
 const paginatedCategories = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value
     return filteredCategories.value.slice(start, start + itemsPerPage.value)
 })
 
-// --- METHODS ---
+// METHODS
 onMounted(async () => {
     await categoryStore.fetchCategories()
     if (route.query.action === 'create') openCreateModal()
@@ -308,11 +295,11 @@ const handleView = (item) => { selectedItem.value = item; showDetailsModal.value
 const handleDelete = (item) => { selectedItem.value = item; showDeleteModal.value = true }
 const triggerFileInput = () => fileInput.value?.click()
 
-const handleImageUpload = (event) => {
-    const file = event.target.files?.[0]
+const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
     if (file) {
         form.image = file
-        const reader = new FileReader(); reader.onload = (e) => imagePreview.value = e.target?.result; reader.readAsDataURL(file)
+        const reader = new FileReader(); reader.onload = (ev) => imagePreview.value = ev.target?.result; reader.readAsDataURL(file)
     }
 }
 
@@ -323,22 +310,22 @@ const saveCategory = async () => {
     try {
         isEditing.value ? await categoryStore.editCategory(selectedItem.value.id, payload) : await categoryStore.createCategory(payload)
         showFormModal.value = false; await categoryStore.fetchCategories({ force: true }); toast.success('Saved')
-    } catch (err) { toast.error('Failed') }
+    } catch { toast.error('Failed') }
 }
 
 const confirmDelete = async () => {
     try {
         await categoryStore.deleteCategory(selectedItem.value.id)
         showDeleteModal.value = false; await categoryStore.fetchCategories({ force: true }); toast.success('Deleted')
-    } catch (e) { toast.error('Delete failed') }
+    } catch { toast.error('Error') }
 }
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 const getStatusClass = (s) => (!s || s === 'Active') ? 'status-active' : 'status-pending'
 const handleImageError = (e) => e.target.src = 'https://ui-avatars.com/api/?name=C&background=4f46e5&color=fff'
 
-watch(searchQuery, () => { currentPage.value = 1 })
-watch([showFormModal, showDetailsModal, showDeleteModal], (vals) => document.body.style.overflow = vals.some(v => v) ? 'hidden' : '')
+watch(searchQuery, () => currentPage.value = 1)
+watch([showFormModal, showDetailsModal, showDeleteModal], (v) => document.body.style.overflow = v.some(x => x) ? 'hidden' : '')
 onUnmounted(() => document.body.style.overflow = '')
 </script>
 
@@ -359,92 +346,89 @@ onUnmounted(() => document.body.style.overflow = '')
   padding: 2.5rem;
 }
 
-/* --- HEADER, STATS, TABLE (UNCHANGED) --- */
+/* Header */
 .admin-header { margin-bottom: 2.5rem; }
-.header-content { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
-.title-stack h1 { font-size: 2.75rem; font-weight: 800; letter-spacing: -2px; display: flex; align-items: center; gap: 1rem; margin: 0; }
-.count-chip { font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.2); font-weight: 600; }
-.subtitle-text { color: var(--text-muted); margin: 0.5rem 0 0 0; font-size: 0.95rem; }
-.action-group { display: flex; align-items: center; gap: 1rem; }
-.search-wrapper { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 320px; display: flex; align-items: center; transition: 0.3s; }
-.search-icon { position: absolute; left: 1rem; color: var(--text-muted); }
-.search-wrapper input { width: 100%; background: transparent; border: none; color: white; padding: 0.85rem 3.5rem 0.85rem 2.8rem; outline: none; font-size: 0.9rem; }
-.search-shortcut { position: absolute; right: 0.8rem; background: #27272a; color: #71717a; padding: 2px 6px; border-radius: 6px; font-size: 0.7rem; border: 1px solid #3f3f46; font-family: 'JetBrains Mono', monospace; }
-.primary-add-btn { background: var(--accent); color: white; border: none; padding: 0.85rem 1.75rem; border-radius: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s; }
-.primary-add-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(99, 102, 241, 0.4); }
+.header-content { display: flex; justify-content: space-between; align-items: flex-end; }
+.title-stack h1 { font-size: 2.75rem; font-weight: 800; letter-spacing: -1.5px; display: flex; align-items: center; gap: 1rem; margin: 0; }
+.count-chip { font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(99,102,241,0.2); }
+.subtitle-text { color: var(--text-muted); margin: 0.5rem 0 0 0; }
 
+/* Actions */
+.action-group { display: flex; gap: 1rem; align-items: center; }
+.search-wrapper { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 300px; }
+.search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+.search-wrapper input { width: 100%; background: transparent; border: none; color: white; padding: 0.75rem 1rem 0.75rem 2.8rem; outline: none; }
+.search-shortcut { position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); background: #27272a; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; color: #71717a; }
+.primary-add-btn { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+.primary-add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.3); }
+
+/* Stats */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 28px; padding: 1.75rem; display: flex; align-items: center; gap: 1.5rem; }
-.stat-icon { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem; }
+.stat-icon { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
 .stat-icon.blue { background: rgba(99, 102, 241, 0.1); color: var(--accent); }
 .stat-icon.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
 .stat-icon.purple { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
-.stat-data .value { font-size: 1.85rem; font-weight: 800; display: block; }
+.stat-data .label { display: block; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; }
+.stat-data .value { font-size: 1.75rem; font-weight: 800; }
 
-.content-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: 32px; overflow: hidden; }
+/* Table */
+.content-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; }
 .premium-table { width: 100%; border-collapse: collapse; }
-.premium-table th { background: rgba(255, 255, 255, 0.01); text-align: left; padding: 1.25rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 700; letter-spacing: 2px; }
-.premium-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.premium-table th { text-align: left; padding: 1rem 1.5rem; font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); letter-spacing: 1px; font-weight: 700; }
+.premium-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .member-cell { display: flex; align-items: center; gap: 1rem; }
-.category-img-wrapper { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); }
+.category-img-wrapper { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); flex-shrink: 0; }
 .category-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
 .img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--accent); color: white; font-weight: 800; }
-.status-pill { padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; border: 1px solid currentColor; text-transform: uppercase; }
+.status-pill { padding: 5px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; border: 1px solid currentColor; }
 .status-active { background: rgba(34, 197, 94, 0.1); color: #34d399; }
-.status-pending { background: rgba(234, 179, 8, 0.1); color: #fbbf24; }
 .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .action-icon { background: #1c1c21; border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-.action-icon:hover { color: white; border-color: var(--accent); background: var(--accent); }
-.action-icon.delete:hover { border-color: #ef4444; background: #ef4444; }
+.action-icon:hover { background: var(--accent); color: white; border-color: var(--accent); }
+.action-icon.delete:hover { background: #ef4444; border-color: #ef4444; }
 
-/* --- COMPACT MODALS (NEW) --- */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-.modal-surface.compact-modal { max-width: 400px; border-radius: 28px; background: #0c0c0e; border: 1px solid var(--border); width: 100%; position: relative; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.8); }
-.modal-banner.compact { height: 80px; background: linear-gradient(90deg, #6366f1, #a855f7); width: 100%; }
+/* Pagination */
+.premium-pagination-footer { padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+.entries-text { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+.mono-num { color: white; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal-surface.compact-modal { max-width: 400px; width: 90%; background: #0c0c0e; border: 1px solid var(--border); border-radius: 28px; overflow: hidden; position: relative; }
+.modal-banner.compact { height: 80px; background: linear-gradient(90deg, #6366f1, #a855f7); }
 .modal-banner.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
 .modal-banner.detail { background: linear-gradient(90deg, #22c55e, #10b981); }
-.close-btn { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 10; }
+.close-btn { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.3); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; }
 .modal-content.compact-padding { padding: 0 1.5rem 2rem 1.5rem; margin-top: -40px; }
-.modal-header-clean { text-align: center; margin-bottom: 1.5rem; }
 .icon-circle.compact { width: 70px; height: 70px; border-radius: 20px; border: 5px solid #0c0c0e; background: var(--surface); margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 1.5rem; overflow: hidden; cursor: pointer; }
-.icon-circle.danger { color: #ef4444; }
-.icon-circle.detail { color: #22c55e; }
 .circle-img-preview { width: 100%; height: 100%; object-fit: cover; }
+.modal-header-clean h2 { text-align: center; margin: 0 0 1.5rem 0; font-size: 1.5rem; font-weight: 800; }
 
-.input-group-custom label { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800; margin-bottom: 8px; }
+.input-group-custom label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; }
 .input-group-custom input { width: 100%; background: #121216; border: 1px solid var(--border); color: white; padding: 0.8rem; border-radius: 12px; outline: none; }
 .input-group-custom input:focus { border-color: var(--accent); }
-.error-msg { color: #ef4444; font-size: 0.75rem; margin-top: 4px; display: block; }
+.image-upload-zone { margin-top: 1rem; background: rgba(255,255,255,0.02); border: 1px dashed var(--border); padding: 0.8rem; border-radius: 12px; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; }
 
-.image-upload-zone { margin-top: 1rem; background: rgba(255,255,255,0.02); border: 1px dashed var(--border); padding: 0.8rem; border-radius: 12px; text-align: center; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-.image-upload-zone:hover { border-color: var(--accent); color: white; }
+.modal-footer-refined { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.btn-primary, .btn-secondary, .btn-danger { flex: 1; padding: 0.8rem; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-secondary { background: #1c1c21; border: 1px solid var(--border); color: white; }
+.btn-danger { background: #ef4444; color: white; }
 
 .info-grid-simple { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.info-box { background: #121216; border: 1px solid var(--border); padding: 1rem; border-radius: 15px; }
-.info-box label { font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; display: block; }
-.info-box p { font-weight: 700; margin: 0; font-size: 1rem; }
-.info-box.full { grid-column: span 2; }
-.large-text { font-size: 1.2rem !important; color: var(--accent); }
-.date-visible { color: #f1f5f9; font-weight: 600; }
+.info-box { background: #121216; border: 1px solid var(--border); padding: 1rem; border-radius: 14px; }
+.info-box label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px; font-weight: 800; }
+.info-box p { margin: 0; font-weight: 700; }
+.large-text { color: var(--accent); font-size: 1.1rem !important; }
 
-.modal-footer-refined { display: flex; gap: 1rem; margin-top: 2rem; }
-.btn-primary, .btn-danger, .btn-secondary { flex: 1; padding: 0.8rem; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; }
-.btn-primary { background: var(--accent); color: white; }
-.btn-danger { background: #ef4444; color: white; }
-.btn-secondary { background: #1c1c21; color: white; border: 1px solid var(--border); }
-.full-width { width: 100%; }
-.delete-warning { text-align: center; background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: 14px; color: #fca5a5; }
-
-/* --- PAGINATION & SHIMMER (UNCHANGED) --- */
-.premium-pagination-footer { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; background: rgba(0, 0, 0, 0.2); border-top: 1px solid var(--border); }
-.shimmer { background: #1c1c21; background-image: linear-gradient(90deg, #1c1c21 0px, #2a2a32 40px, #1c1c21 80px); background-size: 200% 100%; animation: shimmer-anim 1.5s infinite linear; border-radius: 8px; }
-@keyframes shimmer-anim { 0% { background-position: -150% 0; } 100% { background-position: 150% 0; } }
-
+/* Transitions */
 .premium-modal-enter-active, .premium-modal-leave-active { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .premium-modal-enter-from, .premium-modal-leave-to { opacity: 0; transform: scale(0.9) translateY(20px); }
 
 @media (max-width: 992px) {
-    .header-content { flex-direction: column; align-items: stretch; }
     .stats-row { grid-template-columns: 1fr; }
+    .header-content { flex-direction: column; align-items: stretch; gap: 1.5rem; }
+    .search-wrapper { width: 100%; }
 }
 </style>
