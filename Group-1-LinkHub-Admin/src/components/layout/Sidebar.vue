@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const props = defineProps({
@@ -25,12 +25,10 @@ const settingsItems = [
 // --- LOGIC ---
 const isActive = (path) => route.path === path;
 
-// Computed: Check if the current URL is one of the settings pages
 const isRouteInSettings = computed(() =>
     settingsItems.some(item => route.path.startsWith(item.path))
 );
 
-// FIX: This watcher prevents the menu from closing when you navigate
 watch(
     () => route.path,
     () => {
@@ -41,7 +39,6 @@ watch(
     { immediate: true }
 );
 
-// Toggle logic (manual click)
 const toggleSettings = () => {
     if (props.isOpen) {
         isSettingsExpanded.value = !isSettingsExpanded.value;
@@ -50,15 +47,16 @@ const toggleSettings = () => {
 
 const navigateTo = (path) => {
     router.push(path);
-    // Note: We DO NOT set isSettingsExpanded to false here
 };
 
+// ✅ Fixed: clears all tokens then redirects
 const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
     showLogoutModal.value = false;
     router.push('/login');
 };
 
-// Collapses submenu if the sidebar is closed (mini mode)
 watch(() => props.isOpen, (newVal) => {
     if (!newVal) isSettingsExpanded.value = false;
     else if (isRouteInSettings.value) isSettingsExpanded.value = true;
@@ -116,10 +114,12 @@ watch(() => props.isOpen, (newVal) => {
                         <span v-if="isOpen" class="nav-label">Help & Support</span>
                     </div>
 
+                 
                     <div class="nav-item logout-item" @click="showLogoutModal = true" :title="!isOpen ? 'Logout' : ''">
                         <span class="material-icons">logout</span>
                         <span v-if="isOpen" class="nav-label">Logout</span>
                     </div>
+
                 </nav>
             </div>
         </div>
@@ -135,6 +135,7 @@ watch(() => props.isOpen, (newVal) => {
                     <p>Are you sure you want to end your session?</p>
                     <div class="modal-btns">
                         <button class="btn-back" @click="showLogoutModal = false">Cancel</button>
+                      
                         <button class="btn-out" @click="handleLogout">Logout</button>
                     </div>
                 </div>
@@ -238,7 +239,6 @@ watch(() => props.isOpen, (newVal) => {
     color: var(--text-muted) !important;
 }
 
-/* Submenu Styling */
 .submenu-container {
     margin-left: 20px;
     border-left: 1px solid #1f1f23;
@@ -269,7 +269,6 @@ watch(() => props.isOpen, (newVal) => {
     font-size: 20px !important;
 }
 
-/* Transitions */
 .dropdown-enter-active,
 .dropdown-leave-active {
     transition: all 0.3s ease;
@@ -307,7 +306,6 @@ watch(() => props.isOpen, (newVal) => {
     color: #ef4444;
 }
 
-/* Modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
