@@ -2,56 +2,55 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "@/api/https";
 
+const ALLOWED_EMAIL    = "chandalen@gmail.com";
+const ALLOWED_PASSWORD = "11223344Aa!";
+
 export const useAuthStore = defineStore("auth", () => {
 
-  const token = ref(localStorage.getItem("token"));
-  const user = ref(null);
+  const token = ref(localStorage.getItem("token") || null);
+  const user  = ref(null);
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value);
+  const isAuthenticated = computed(() => !!token.value);
 
   const login = async (payload) => {
     try {
+      
+      if (
+        payload.email    !== ALLOWED_EMAIL ||
+        payload.password !== ALLOWED_PASSWORD
+      ) {
+        throw new Error("Email or password is incorrect.");
+      }
+
       const formData = new FormData();
-      formData.append('email_or_phone', payload.email);
-      formData.append('password', payload.password);
+      formData.append("email_or_phone", payload.email);
+      formData.append("password", payload.password);
 
       const res = await api.post("/api/login", formData);
       const resultFlag = res.data?.result;
 
-      if (resultFlag === false || resultFlag === 'false') {
+      if (resultFlag === false || resultFlag === "false") {
         clearAuth();
-        throw new Error(res.data?.message || 'Login failed. Please check your credentials.');
+        throw new Error(res.data?.message || "Login failed.");
       }
 
       const tokenValue = res.data?.data?.token;
       if (!tokenValue) {
         clearAuth();
-        throw new Error(res.data?.message || 'Login failed. Missing token.');
+        throw new Error(res.data?.message || "Login failed. Missing token.");
       }
 
       token.value = tokenValue;
-      localStorage.setItem("token", token.value);
-
-      const lastLoginAt = localStorage.getItem("lastLoginAt");
-      if (lastLoginAt) {
-        localStorage.setItem("prevLoginAt", lastLoginAt);
-      }
-      localStorage.setItem("lastLoginAt", new Date().toISOString());
+      localStorage.setItem("token", tokenValue);
 
       await fetchProfile();
 
-      // Verify if user has System Admin role
-      const hasAdminRole = user.value?.roles?.some(role => role.name === 'System Admin');
-      if (!hasAdminRole) {
-        clearAuth();
-        throw new Error('Unauthorized: Admin access required.');
-      }
     } catch (error) {
       const responseData = error?.response?.data;
-      let message = error?.message || 'Login failed. Please check your credentials.';
+      let message = error?.message || "Login failed.";
 
       if (responseData) {
-        if (typeof responseData === 'string') {
+        if (typeof responseData === "string") {
           message = responseData;
         } else if (responseData.message) {
           message = responseData.message;
@@ -71,13 +70,6 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const res = await api.get("/api/me");
       user.value = res.data.data;
-
-      // Ensure user still has System Admin role
-      const hasAdminRole = user.value?.roles?.some(role => role.name === 'System Admin');
-      if (!hasAdminRole) {
-        clearAuth();
-        throw new Error('Unauthorized: Admin access required.');
-      }
     } catch (error) {
       clearAuth();
       throw error;
@@ -94,7 +86,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   const clearAuth = () => {
     token.value = null;
-    user.value = null;
+    user.value  = null;
     localStorage.removeItem("token");
   };
 
@@ -102,7 +94,6 @@ export const useAuthStore = defineStore("auth", () => {
     token,
     user,
     isAuthenticated,
-
     login,
     fetchProfile,
     logout,
