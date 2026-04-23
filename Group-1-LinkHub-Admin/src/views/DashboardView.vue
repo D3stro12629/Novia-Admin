@@ -4,10 +4,8 @@
             <!-- 1. Header Section -->
             <header class="dash-header">
                 <div class="header-left">
-                    <span class="date-badge">{{ new Date().toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric',
-                        year: 'numeric' }) }}</span>
-                    <h1>Insights Dashboard</h1>
+                    <span class="date-badge">{{ formattedDate }}</span>
+                    <h1 class="serif-title">Insights Dashboard</h1>
                     <p>Monitor your platform's core metrics and user activity.</p>
                 </div>
                 <div class="header-right">
@@ -20,15 +18,26 @@
                 </div>
             </header>
 
-            <!-- 2. Stat Cards Row -->
+            <!-- 2. Stat Cards Row (Updated to match screenshot layout) -->
             <section class="stats-grid">
-                <StatCard v-for="card in dashboardStore.statCardsData" :key="card.label" v-bind="card"
-                    :is-loading="dashboardStore.isLoading" />
+                <div v-for="card in dashboardStore.statCardsData" :key="card.label" class="stat-box">
+                    <div class="stat-top">
+                        <div class="stat-icon" :style="{ color: card.iconColor || 'var(--color-text)' }">
+                            <i :class="card.icon"></i>
+                        </div>
+                        <span class="trend-badge" v-if="card.trend">
+                            {{ card.trend > 0 ? '+' : '' }}{{ card.trend }}%
+                        </span>
+                    </div>
+                    <div class="stat-content">
+                        <h2 class="stat-value serif-title">{{ card.value }}</h2>
+                        <p class="stat-label">{{ card.label }}</p>
+                    </div>
+                </div>
             </section>
 
             <!-- 3. Bento Grid Content -->
             <main class="bento-container">
-                <!-- Top Left: Main Chart -->
                 <div class="bento-item main-chart">
                     <div class="item-head">
                         <h3>Category Distribution</h3>
@@ -37,7 +46,6 @@
                     <BarChart :data="dashboardStore.barChartData" :is-loading="dashboardStore.isLoading" />
                 </div>
 
-                <!-- Top Right: Actions -->
                 <div class="bento-item quick-controls">
                     <div class="item-head">
                         <h3>Quick Controls</h3>
@@ -54,52 +62,29 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Bottom Left: Progress -->
-                <div class="bento-item progress-section">
-                    <ProgressBarChart title="Completion Progress" icon="bi-check2-circle"
-                        :data="dashboardStore.progressData" :summary="dashboardStore.summaryData"
-                        :is-loading="dashboardStore.isLoading" />
-                </div>
-
-                <!-- Bottom Right: Users -->
-                <div class="bento-item users-section">
-                    <div class="item-head">
-                        <h3>Recent Users</h3>
-                        <span class="count-tag">{{ dashboardStore.userStats.totalUsers }} Total</span>
-                    </div>
-
-                    <div class="user-list">
-                        <div v-for="user in dashboardStore.newestUsers" :key="user.id" class="user-card">
-                            <img :src="getAvatarUrl(user.avatar)" class="u-avatar" />
-                            <div class="u-info">
-                                <span class="u-name">{{ user.full_name }}</span>
-                                <span class="u-mail">{{ user.email }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </main>
         </div>
     </DashboardLayout>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
-import StatCard from '@/components/ui/StatCard.vue'
 import BarChart from '@/components/charts/BarChart.vue'
-import ProgressBarChart from '@/components/charts/ProgressBarChart.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 
 const dashboardStore = useDashboardStore()
 const router = useRouter()
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://novia2.csm.linkpc.net'
 
 onMounted(() => dashboardStore.fetchDashboardData())
 
-const getAvatarUrl = (a) => (!a || a === 'no_photo.jpg' ? '/images/avatar/avatar-illustrated-01.png' : `${API_BASE_URL}/storage/avatars/${a}`)
+// Fix date formatting to match screenshot: "APR 22, 2026"
+const formattedDate = computed(() => {
+    return new Date().toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+    }).toUpperCase();
+})
 
 const handleQuickAction = (label) => {
     const routes = { 'Add Skill': '/skill', 'Add School': '/school', 'Add Degree': '/degree', 'Add Subject': '/subject', 'Add Category': '/category' }
@@ -116,13 +101,18 @@ const generateReport = () => {
 </script>
 
 <style scoped>
+/* Importing a Serif font for the headings to match the screenshot */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,700..900;1,8..60,700..900&display=swap');
+
+.serif-title {
+    font-family: 'Source Serif 4', serif;
+}
+
 .dash-wrapper {
-    padding: 30px;
-    background: var(--nav-bg);
+    padding: 40px;
+    background: #02040a; /* Darker background from image */
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+    color: #ffffff;
 }
 
 /* Header */
@@ -130,40 +120,78 @@ const generateReport = () => {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    margin-bottom: 50px;
 }
 
 .date-badge {
-    background: var(--color-hover);
-    padding: 4px 12px;
-    border-radius: 100px;
     font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--color-muted);
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #8b949e;
 }
 
 .dash-header h1 {
-    font-size: 32px;
-    font-weight: 800;
-    margin: 8px 0;
-    letter-spacing: -1px;
+    font-size: 42px;
+    margin: 10px 0;
+    letter-spacing: -0.5px;
 }
 
 .dash-header p {
-    color: var(--color-muted);
-    margin: 0;
+    color: #8b949e;
+    font-size: 16px;
 }
 
-.header-right {
+/* Stats Grid - Fixed to match the visual columns */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    margin-bottom: 60px;
+}
+
+.stat-box {
+    padding: 10px;
+}
+
+.stat-top {
     display: flex;
-    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.btn-primary {
-    background: var(--color-text);
-    color: var(--nav-bg);
-    padding: 12px 20px;
+.stat-icon {
+    font-size: 24px;
+}
+
+.trend-badge {
+    background: rgba(46, 160, 67, 0.15);
+    color: #3fb950;
+    padding: 4px 10px;
     border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.stat-value {
+    font-size: 48px;
+    margin: 0;
+    line-height: 1;
+}
+
+.stat-label {
+    color: #8b949e;
+    font-weight: 600;
+    margin: 10px 0 0 0;
+    font-size: 14px;
+}
+
+/* Buttons */
+.btn-primary {
+    background: #ffffff;
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 8px;
     font-weight: 600;
     text-decoration: none;
     display: flex;
@@ -172,20 +200,14 @@ const generateReport = () => {
 }
 
 .btn-secondary {
-    background: var(--nav-surface);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    padding: 12px 20px;
-    border-radius: 12px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
     font-weight: 600;
     cursor: pointer;
-}
-
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* Bento Layout */
@@ -196,144 +218,16 @@ const generateReport = () => {
 }
 
 .bento-item {
-    background: var(--nav-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 24px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 20px;
     padding: 24px;
 }
 
-.item-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
+.main-chart { grid-column: span 8; }
+.quick-controls { grid-column: span 4; }
 
-.item-head h3 {
-    font-size: 17px;
-    font-weight: 700;
-    margin: 0;
-}
-
-.main-chart {
-    grid-column: span 8;
-}
-
-.quick-controls {
-    grid-column: span 4;
-}
-
-.progress-section {
-    grid-column: span 7;
-}
-
-.users-section {
-    grid-column: span 5;
-}
-
-/* Quick Action Tiles */
-.actions-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.action-tile {
-    display: flex;
-    align-items: center;
-    padding: 14px;
-    background: var(--nav-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
-    cursor: pointer;
-    transition: 0.2s;
-    text-align: left;
-    width: 100%;
-}
-
-.action-tile:hover {
-    border-color: var(--color-text);
-    transform: translateX(4px);
-}
-
-.tile-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--nav-surface);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-}
-
-.tile-text .label {
-    display: block;
-    font-weight: 700;
-    font-size: 14px;
-}
-
-.tile-text .sub {
-    font-size: 12px;
-    color: var(--color-muted);
-}
-
-.arrow {
-    margin-left: auto;
-    color: var(--color-muted);
-}
-
-/* User Cards */
-.user-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.user-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    background: var(--nav-bg);
-    border-radius: 14px;
-    border: 1px solid var(--color-border);
-}
-
-.u-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    object-fit: cover;
-}
-
-.u-name {
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.u-mail {
-    font-size: 12px;
-    color: var(--color-muted);
-}
-
-.count-tag {
-    background: var(--color-text);
-    color: var(--nav-bg);
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 800;
-}
-
-@media (max-width: 1024px) {
-
-    .main-chart,
-    .quick-controls,
-    .progress-section,
-    .users-section {
-        grid-column: span 12;
-    }
+@media (max-width: 1100px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
