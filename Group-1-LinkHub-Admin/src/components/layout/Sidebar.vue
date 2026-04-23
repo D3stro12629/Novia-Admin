@@ -49,7 +49,7 @@ const navigateTo = (path) => {
     router.push(path);
 };
 
-// ✅ Fixed: clears all tokens then redirects
+
 const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
