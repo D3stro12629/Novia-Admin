@@ -1,117 +1,121 @@
 <template>
   <main class="login-page">
-    <div class="blob-wrapper">
-      <div class="profile-header">
-        <div class="profile-circle">
-          <i class="bi bi-person-fill"></i>
+    <div class="login-card">
+      <!-- Minimal Top Accent -->
+      <div class="top-accent"></div>
+
+      <div class="card-header">
+        <div class="app-logo">
+          <i class="bi bi-shield-lock-fill"></i>
         </div>
+        <h1 class="login-title">Welcome back</h1>
+        <p class="login-subtitle">Please enter your details</p>
       </div>
 
-      <h2 class="text-center text-white fw-bold sign-in-title">Login</h2>
-
-      <form @submit.prevent="handleLogin" class="mt-4">
-        <!-- Email -->
-        <div class="custom-input-group mb-2">
-          <div class="icon-box">
-            <i class="bi bi-person"></i>
+      <form @submit.prevent="handleLogin" class="login-form">
+        <!-- Email/Phone Field -->
+        <div class="input-group-wrapper">
+          <label class="field-label">Email or Phone</label>
+          <div :class="['custom-input-box', { 'input-error': errors.email_or_phone }]">
+            <i class="bi bi-person input-icon"></i>
+            <input
+              v-model="credentials.email_or_phone"
+              type="text"
+              placeholder="name@company.com"
+              class="main-input"
+            />
           </div>
-          <input
-            v-model="email_or_phone"
-            type="text"
-            placeholder="Enter your Email or Phone"
-            class="inner-input"
-          />
+          <p v-if="errors.email_or_phone" class="error-text">{{ errors.email_or_phone }}</p>
         </div>
-        <p v-if="err.email_or_phone" class="error-msg">{{ err.email_or_phone }}</p>
 
-        <!-- Password -->
-        <div class="custom-input-group mb-2 mt-3">
-          <div class="icon-box">
-            <i class="bi bi-lock"></i>
+        <!-- Password Field -->
+        <div class="input-group-wrapper">
+          <div class="label-row">
+            <label class="field-label">Password</label>
+            <a href="#" class="forgot-link">Forgot?</a>
           </div>
-          <input
-            v-model="password"
-            :type="passwordType"
-            placeholder="Enter your password"
-            class="inner-input"
-          />
-          <span class="eye-icon" @click="togglePassword">
-            <i :class="showPassword ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
-          </span>
-        </div>
-        <p v-if="err.password" class="error-msg">{{ err.password }}</p>
-
-        <!-- API / Auth Error -->
-        <div v-if="apiError" class="api-error-box mt-2">
-          <i class="bi bi-exclamation-circle-fill me-2"></i>{{ apiError }}
+          <div :class="['custom-input-box', { 'input-error': errors.password }]">
+            <i class="bi bi-lock input-icon"></i>
+            <input
+              v-model="credentials.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              class="main-input"
+            />
+            <button type="button" class="eye-btn" @click="showPassword = !showPassword">
+              <i :class="showPassword ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
+            </button>
+          </div>
+          <p v-if="errors.password" class="error-text">{{ errors.password }}</p>
         </div>
 
-        <!-- Remember me -->
-        <div class="d-flex justify-content-between align-items-center mt-3 mb-4 links-row">
-          <label class="checkbox-container">
-            <input type="checkbox" v-model="rememberMe">
-            <span>Remember me</span>
+        <!-- API Error Message -->
+        <Transition name="fade">
+          <div v-if="apiError" class="api-error-alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ apiError }}</span>
+          </div>
+        </Transition>
+
+        <!-- Form Options -->
+        <div class="form-options">
+          <label class="checkbox-wrapper">
+            <input type="checkbox" v-model="rememberMe" />
+            <span class="checkmark"></span>
+            <span class="label-text">Remember me</span>
           </label>
         </div>
 
-        <!-- Submit -->
-        <div class="text-center">
-          <button :disabled="isLoading" type="submit" class="btn-login-gradient">
-            <span v-if="isLoading" class="spinner-border spinner-border-sm"></span>
-            <span v-else>LOGIN</span>
-          </button>
-        </div>
+        <!-- Submit Button -->
+        <button :disabled="isLoading" type="submit" class="btn-primary-login">
+          <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+          <span>{{ isLoading ? 'Checking...' : 'Sign In' }}</span>
+        </button>
       </form>
+
+      <footer class="card-footer">
+        <p>© 2024 Admin System</p>
+      </footer>
     </div>
   </main>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const router    = useRouter()
+const router = useRouter()
 const authStore = useAuthStore()
 
-const email_or_phone = ref('')
-const password       = ref('')
-const rememberMe     = ref(false)
-const isLoading      = ref(false)
-const showPassword   = ref(false)
-const apiError       = ref('')
+const credentials = reactive({ email_or_phone: '', password: '' })
+const errors = reactive({ email_or_phone: '', password: '' })
+const rememberMe = ref(false)
+const isLoading = ref(false)
+const showPassword = ref(false)
+const apiError = ref('')
 
-const err = reactive({
-  email_or_phone: '',
-  password: ''
-})
-
-const passwordType   = computed(() => showPassword.value ? 'text' : 'password')
-const togglePassword = () => { showPassword.value = !showPassword.value }
-
-function validator() {
-  err.email_or_phone = !email_or_phone.value.trim() ? 'Email or phone number is required.' : ''
-  err.password       = !password.value.trim()       ? 'Password is required.'              : ''
-  return !err.email_or_phone && !err.password
+const validate = () => {
+  let isValid = true
+  errors.email_or_phone = !credentials.email_or_phone.trim() ? 'Required' : ''
+  errors.password = !credentials.password.trim() ? 'Required' : ''
+  if (errors.email_or_phone || errors.password) isValid = false
+  return isValid
 }
 
-async function handleLogin() {
+const handleLogin = async () => {
   apiError.value = ''
-  if (!validator()) return
-
- 
-
+  if (!validate()) return
   isLoading.value = true
+
   try {
     await authStore.login({
-      email: email_or_phone.value,
-      password: password.value,
+      email: credentials.email_or_phone,
+      password: credentials.password,
     })
-
-    router.push('/dashboard')
-
+    router.push({ name: 'dashboard' })
   } catch (error) {
-    apiError.value = error.message || 'Login failed. Please try again.'
+    apiError.value = error.message || 'Invalid credentials'
   } finally {
     isLoading.value = false
   }
@@ -119,138 +123,194 @@ async function handleLogin() {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #cc2be0, #2196f3);
+  background-color: #09090b;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   padding: 20px;
 }
 
-.blob-wrapper {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+/* Reduced size of the Card */
+.login-card {
+  background-color: #121215;
   width: 100%;
-  max-width: 420px;
-  padding: 60px 45px 45px;
-  border-radius: 40% 60% 50% 50% / 40% 40% 60% 60%;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  max-width: 380px; /* Smaller width */
+  border-radius: 20px; /* Slightly tighter corners */
+  border: 1px solid #27272a;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  padding: 32px; /* Reduced internal padding */
 }
 
-.profile-header {
+.top-accent {
   position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.profile-circle {
-  width: 85px;
-  height: 85px;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.8rem;
-  color: #c729df;
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #6366f1;
 }
 
-.sign-in-title {
-  font-size: 2rem;
-  margin-top: 10px;
+/* Header */
+.card-header {
+  text-align: center;
+  margin-bottom: 24px;
 }
 
-.custom-input-group {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.3);
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50px;
-  padding: 6px 15px;
-}
-
-.icon-box {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(to right, #b727d8, #2196f3);
+.app-logo {
+  width: 44px;
+  height: 44px;
+  background-color: rgba(99, 102, 241, 0.1);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  margin-right: 12px;
-  flex-shrink: 0;
+  margin: 0 auto 16px;
+  color: #6366f1;
+  font-size: 1.4rem;
 }
 
-.inner-input {
+.login-title {
+  color: #fafafa;
+  font-size: 1.4rem; /* Smaller Title */
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+/* Form */
+.input-group-wrapper {
+  margin-bottom: 16px;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.field-label {
+  color: #e4e4e7;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.forgot-link {
+  color: #6366f1;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+/* Inputs - Slightly shorter */
+.custom-input-box {
+  display: flex;
+  align-items: center;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  padding: 0 12px;
+}
+
+.custom-input-box:focus-within {
+  border-color: #6366f1;
+}
+
+.input-icon {
+  color: #71717a;
+  font-size: 1rem;
+  margin-right: 10px;
+}
+
+.main-input {
   background: transparent;
   border: none;
   width: 100%;
-  color: rgb(26, 23, 23);
+  height: 42px; /* Smaller height */
+  color: #fafafa;
   outline: none;
-}
-.inner-input::placeholder {
-  color: rgba(91, 87, 87, 0.8);
+  font-size: 0.9rem;
 }
 
-.eye-icon {
-  cursor: pointer;
-  color: white;
-}
-
-.links-row {
-  font-size: 0.85rem;
-  color: white;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: white;
-}
-
-.btn-login-gradient {
-  background: linear-gradient(to right, #2196f3, #b727d8);
+.eye-btn {
+  background: transparent;
   border: none;
-  color: white;
-  padding: 12px 50px;
-  border-radius: 50px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  transition: 0.3s;
-}
-.btn-login-gradient:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-.btn-login-gradient:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  color: #71717a;
+  cursor: pointer;
 }
 
-.error-msg {
-  color: #ffbaba;
-  font-size: 0.75rem;
-  margin: 5px 0 0 15px;
-}
-
-.api-error-box {
-  background: rgba(255, 0, 0, 0.15);
-  border: 1px solid rgba(255, 100, 100, 0.5);
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: #ffe0e0;
-  font-size: 0.82rem;
+/* Checkbox */
+.checkbox-wrapper {
   display: flex;
   align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
+
+.label-text {
+  color: #a1a1aa;
+  font-size: 0.8rem;
+}
+
+/* Button - More compact */
+.btn-primary-login {
+  width: 100%;
+  background-color: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 20px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.btn-primary-login:hover {
+  background-color: #4f46e5;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 0.7rem;
+  margin-top: 4px;
+}
+
+.api-error-alert {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.card-footer {
+  margin-top: 24px;
+  text-align: center;
+  border-top: 1px solid #27272a;
+  padding-top: 16px;
+}
+
+.card-footer p {
+  color: #52525b;
+  font-size: 0.7rem;
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

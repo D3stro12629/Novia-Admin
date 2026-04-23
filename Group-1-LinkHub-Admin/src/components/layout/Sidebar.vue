@@ -1,68 +1,3 @@
-<script setup>
-import { ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
-const props = defineProps({
-    isOpen: { type: Boolean, default: true }
-});
-
-const route = useRoute();
-const router = useRouter();
-
-// --- STATE ---
-const isSettingsExpanded = ref(false);
-const showLogoutModal = ref(false);
-
-const settingsItems = [
-    { name: 'Users', icon: 'group', path: '/users' },
-    { name: 'Categories', icon: 'category', path: '/category' },
-    { name: 'Degree', icon: 'workspace_premium', path: '/degrees' },
-    { name: 'Schools', icon: 'school', path: '/schools' },
-    { name: 'Skills', icon: 'psychology', path: '/skills' },
-    { name: 'Subjects', icon: 'book', path: '/subjects' },
-];
-
-// --- LOGIC ---
-const isActive = (path) => route.path === path;
-
-const isRouteInSettings = computed(() =>
-    settingsItems.some(item => route.path.startsWith(item.path))
-);
-
-watch(
-    () => route.path,
-    () => {
-        if (isRouteInSettings.value) {
-            isSettingsExpanded.value = true;
-        }
-    },
-    { immediate: true }
-);
-
-const toggleSettings = () => {
-    if (props.isOpen) {
-        isSettingsExpanded.value = !isSettingsExpanded.value;
-    }
-};
-
-const navigateTo = (path) => {
-    router.push(path);
-};
-
-// ✅ Fixed: clears all tokens then redirects
-const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    showLogoutModal.value = false;
-    router.push('/login');
-};
-
-watch(() => props.isOpen, (newVal) => {
-    if (!newVal) isSettingsExpanded.value = false;
-    else if (isRouteInSettings.value) isSettingsExpanded.value = true;
-});
-</script>
-
 <template>
     <aside :class="['sidebar', { 'closed': !isOpen }]">
         <div class="sidebar-wrapper">
@@ -386,3 +321,78 @@ watch(() => props.isOpen, (newVal) => {
     display: none;
 }
 </style>
+
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth'; // 1. Import your auth store
+
+const props = defineProps({
+    isOpen: { type: Boolean, default: true }
+});
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore(); // 2. Initialize the store
+
+// --- STATE ---
+const isSettingsExpanded = ref(false);
+const showLogoutModal = ref(false);
+
+const settingsItems = [
+    { name: 'Users', icon: 'group', path: '/users' },
+    { name: 'Categories', icon: 'category', path: '/category' },
+    { name: 'Degree', icon: 'workspace_premium', path: '/degrees' },
+    { name: 'Schools', icon: 'school', path: '/schools' },
+    { name: 'Skills', icon: 'psychology', path: '/skills' },
+    { name: 'Subjects', icon: 'book', path: '/subjects' },
+];
+
+// --- LOGIC ---
+const isActive = (path) => route.path === path;
+
+const isRouteInSettings = computed(() =>
+    settingsItems.some(item => route.path.startsWith(item.path))
+);
+
+watch(
+    () => route.path,
+    () => {
+        if (isRouteInSettings.value) {
+            isSettingsExpanded.value = true;
+        }
+    },
+    { immediate: true }
+);
+
+const toggleSettings = () => {
+    if (props.isOpen) {
+        isSettingsExpanded.value = !isSettingsExpanded.value;
+    }
+};
+
+const navigateTo = (path) => {
+    router.push(path);
+};
+
+// ✅ FIXED: Now calls the API and clears state via the Pinia Store
+const handleLogout = async () => {
+    try {
+        // This calls api.delete("/api/logout") AND clears localStorage/token
+        await authStore.logout(); 
+    } catch (error) {
+        console.error("Logout failed:", error);
+    } finally {
+        // Close modal and send user to login regardless of API success
+        showLogoutModal.value = false;
+        router.push('/login');
+    }
+};
+
+watch(() => props.isOpen, (newVal) => {
+    if (!newVal) isSettingsExpanded.value = false;
+    else if (isRouteInSettings.value) isSettingsExpanded.value = true;
+});
+</script>
+
+<!-- The Template and Style remain the same as you provided -->
