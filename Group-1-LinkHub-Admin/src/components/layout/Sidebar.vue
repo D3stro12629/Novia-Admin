@@ -49,7 +49,7 @@
                         <span v-if="isOpen" class="nav-label">Help & Support</span>
                     </div>
 
-                 
+
                     <div class="nav-item logout-item" @click="showLogoutModal = true" :title="!isOpen ? 'Logout' : ''">
                         <span class="material-icons">logout</span>
                         <span v-if="isOpen" class="nav-label">Logout</span>
@@ -70,7 +70,7 @@
                     <p>Are you sure you want to end your session?</p>
                     <div class="modal-btns">
                         <button class="btn-back" @click="showLogoutModal = false">Cancel</button>
-                      
+
                         <button class="btn-out" @click="handleLogout">Logout</button>
                     </div>
                 </div>
@@ -379,7 +379,7 @@ const navigateTo = (path) => {
 const handleLogout = async () => {
     try {
         // This calls api.delete("/api/logout") AND clears localStorage/token
-        await authStore.logout(); 
+        await authStore.logout();
     } catch (error) {
         console.error("Logout failed:", error);
     } finally {

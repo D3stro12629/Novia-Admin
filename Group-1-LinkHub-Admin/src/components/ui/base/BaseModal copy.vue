@@ -1,24 +1,45 @@
 <template>
   <teleport to="body">
-   <div class="modal fade show" tabindex="-1" role="dialog" style="display: block;">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Modal title</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+    <transition name="modal-fade">
+      <div v-if="show" class="modal-overlay" @click.self="close">
+        <div class="modal-container" :class="[size, variant]" @click.stop>
+          <!-- Topographic Header (Optional for Add/Update) -->
+          <div v-if="hasPatternHeader" class="pattern-header">
+            <button class="close-btn circle" @click="close">
+              <i class="bi bi-x"></i>
+            </button>
+            <div class="header-text-group">
+              <h2 class="modal-title">{{ title }}</h2>
+              <p class="modal-subtitle">{{ subtitle }}</p>
+            </div>
+          </div>
+
+          <!-- Standard Header (For Details/Delete) -->
+          <div v-else class="standard-header">
+            <div class="title-with-icon">
+              <slot name="header-icon" />
+              <div class="header-text-group">
+                <h2 class="modal-title">{{ title }}</h2>
+                <p class="modal-subtitle">{{ subtitle }}</p>
+              </div>
+            </div>
+            <button class="close-btn" @click="close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <!-- Content Body -->
+          <div class="modal-body">
+            <slot />
+          </div>
+
+          <!-- Actions Footer -->
+          <div v-if="$slots.footer" class="modal-footer">
+            <slot name="footer" />
+          </div>
+        </div>
       </div>
-      <div class="modal-body">
-        <p>Modal body text goes here.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary">Save changes</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+    </transition>
   </teleport>
 </template>
 

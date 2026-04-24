@@ -75,19 +75,27 @@ export const useProfileStore = defineStore("profile", () => {
     }
   };
 
-  const removeCover = async () => {
+// ... inside useProfileStore ...
+const removeCover = async () => {
     isProcessing.value = true;
     try {
       const res = await api.delete("/api/profile/cover");
-      await fetchProfile();
+      console.log(res);
+      
+      // Force the local user state to null so the header updates
+      if (user.value) {
+        user.value.cover = null;
+      }
+      
+      await fetchProfile(); // Optional: Sync with server
       return res.data;
     } catch (error) {
-      console.error("Failed to remove cover:", error);
+      console.error("Store error:", error);
       throw error;
     } finally {
       isProcessing.value = false;
     }
-  };
+};
 
   const updatePersonalInfo = async (payload) => {
     isProcessing.value = true;
