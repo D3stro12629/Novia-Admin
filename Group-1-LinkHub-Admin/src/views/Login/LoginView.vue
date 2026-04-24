@@ -1,7 +1,6 @@
 <template>
   <main class="login-page">
     <div class="login-card">
-      <!-- Minimal Top Accent -->
       <div class="top-accent"></div>
 
       <div class="card-header">
@@ -32,7 +31,7 @@
         <div class="input-group-wrapper">
           <div class="label-row">
             <label class="field-label">Password</label>
-            <a href="#" class="forgot-link">Forgot?</a>
+         
           </div>
           <div :class="['custom-input-box', { 'input-error': errors.password }]">
             <i class="bi bi-lock input-icon"></i>
@@ -59,11 +58,7 @@
 
         <!-- Form Options -->
         <div class="form-options">
-          <label class="checkbox-wrapper">
-            <input type="checkbox" v-model="rememberMe" />
-            <span class="checkmark"></span>
-            <span class="label-text">Remember me</span>
-          </label>
+       
         </div>
 
         <!-- Submit Button -->
@@ -88,6 +83,10 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
+
+const VALID_EMAIL = 'chandalen@gmail.com'
+const VALID_PASSWORD = '11223344Aa!'
+
 const credentials = reactive({ email_or_phone: '', password: '' })
 const errors = reactive({ email_or_phone: '', password: '' })
 const rememberMe = ref(false)
@@ -96,26 +95,46 @@ const showPassword = ref(false)
 const apiError = ref('')
 
 const validate = () => {
-  let isValid = true
   errors.email_or_phone = !credentials.email_or_phone.trim() ? 'Required' : ''
   errors.password = !credentials.password.trim() ? 'Required' : ''
-  if (errors.email_or_phone || errors.password) isValid = false
-  return isValid
+  return !errors.email_or_phone && !errors.password
 }
 
 const handleLogin = async () => {
   apiError.value = ''
   if (!validate()) return
+
   isLoading.value = true
 
   try {
+    // 1. Check hardcoded credentials first (before calling API)
+    if (
+      credentials.email_or_phone !== VALID_EMAIL ||
+      credentials.password !== VALID_PASSWORD
+    ) {
+      throw new Error('Invalid email or password!')
+    }
+
+    // 2. Call auth store login → calls real API → gets real token
     await authStore.login({
       email: credentials.email_or_phone,
       password: credentials.password,
     })
+
+    // 3. Remember me
+    if (rememberMe.value) {
+      localStorage.setItem('rememberMe', credentials.email_or_phone)
+    } else {
+      localStorage.removeItem('rememberMe')
+    }
+
+    // 4. Redirect to dashboard
     router.push({ name: 'dashboard' })
+
   } catch (error) {
-    apiError.value = error.message || 'Invalid credentials'
+    apiError.value = typeof error === 'string'
+      ? error
+      : error.message || 'Login failed. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -135,17 +154,16 @@ const handleLogin = async () => {
   padding: 20px;
 }
 
-/* Reduced size of the Card */
 .login-card {
   background-color: #121215;
   width: 100%;
-  max-width: 380px; /* Smaller width */
-  border-radius: 20px; /* Slightly tighter corners */
+  max-width: 380px;
+  border-radius: 20px;
   border: 1px solid #27272a;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
-  padding: 32px; /* Reduced internal padding */
+  padding: 32px;
 }
 
 .top-accent {
@@ -157,7 +175,6 @@ const handleLogin = async () => {
   background: #6366f1;
 }
 
-/* Header */
 .card-header {
   text-align: center;
   margin-bottom: 24px;
@@ -178,7 +195,7 @@ const handleLogin = async () => {
 
 .login-title {
   color: #fafafa;
-  font-size: 1.4rem; /* Smaller Title */
+  font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
@@ -188,7 +205,6 @@ const handleLogin = async () => {
   font-size: 0.85rem;
 }
 
-/* Form */
 .input-group-wrapper {
   margin-bottom: 16px;
 }
@@ -211,7 +227,6 @@ const handleLogin = async () => {
   text-decoration: none;
 }
 
-/* Inputs - Slightly shorter */
 .custom-input-box {
   display: flex;
   align-items: center;
@@ -235,7 +250,7 @@ const handleLogin = async () => {
   background: transparent;
   border: none;
   width: 100%;
-  height: 42px; /* Smaller height */
+  height: 42px;
   color: #fafafa;
   outline: none;
   font-size: 0.9rem;
@@ -248,7 +263,6 @@ const handleLogin = async () => {
   cursor: pointer;
 }
 
-/* Checkbox */
 .checkbox-wrapper {
   display: flex;
   align-items: center;
@@ -261,7 +275,6 @@ const handleLogin = async () => {
   font-size: 0.8rem;
 }
 
-/* Button - More compact */
 .btn-primary-login {
   width: 100%;
   background-color: #6366f1;
@@ -281,10 +294,19 @@ const handleLogin = async () => {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
+.btn-primary-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .error-text {
   color: #ef4444;
   font-size: 0.7rem;
   margin-top: 4px;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
 }
 
 .api-error-alert {
