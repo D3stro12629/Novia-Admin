@@ -104,10 +104,10 @@ const formattedDate = computed(() => {
 
 const handleQuickAction = (label) => {
     const routes = { 
-        'Add Skill': '/skill', 
-        'Add School': '/school', 
-        'Add Degree': '/degree', 
-        'Add Subject': '/subject', 
+        'Add Skill': '/skills', 
+        'Add School': '/schools', 
+        'Add Degree': '/degrees', 
+        'Add Subject': '/subjects', 
         'Add Category': '/category' 
     }
     if (routes[label]) router.push({ path: routes[label], query: { action: 'create' } })

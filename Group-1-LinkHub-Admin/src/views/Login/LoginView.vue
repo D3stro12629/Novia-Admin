@@ -14,13 +14,13 @@
       <form @submit.prevent="handleLogin" class="login-form">
         <!-- Email/Phone Field -->
         <div class="input-group-wrapper">
-          <label class="field-label">Email or Phone</label>
+          <label class="field-label">Email</label>
           <div :class="['custom-input-box', { 'input-error': errors.email_or_phone }]">
             <i class="bi bi-person input-icon"></i>
             <input
               v-model="credentials.email_or_phone"
               type="text"
-              placeholder="name@company.com"
+              placeholder="duma@example.com"
               class="main-input"
             />
           </div>
@@ -69,7 +69,7 @@
       </form>
 
       <footer class="card-footer">
-        <p>© 2024 Admin System</p>
+        <p>© 2026 Admin System</p>
       </footer>
     </div>
   </main>

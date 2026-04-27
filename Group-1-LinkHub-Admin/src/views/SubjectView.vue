@@ -12,7 +12,7 @@
                 {{ subjectStore.subjects?.length || 0 }} Total
               </span>
             </h1>
-            <p class="subtitle-text">Define and manage core competencies for the platform</p>
+            <p class="subtitle-text">Define and manage academic subjects for the platform</p>
           </div>
           <div class="header-actions">
             <div class="action-group">
@@ -30,7 +30,7 @@
         </div>
       </header>
 
-      <!-- 2. BENTO STATS SECTION (SKELETON INTEGRATED) -->
+      <!-- 2. BENTO STATS SECTION -->
       <section class="stats-row">
         <template v-if="subjectStore.isLoading">
           <div v-for="i in 3" :key="'stat-s-' + i" class="stat-card">
@@ -66,7 +66,7 @@
         </template>
       </section>
 
-      <!-- 3. MAIN TABLE SECTION (SKELETON INTEGRATED) -->
+      <!-- 3. MAIN TABLE SECTION -->
       <main class="content-wrapper">
         <div class="table-container">
           <table class="premium-table">
@@ -209,7 +209,7 @@
                   <h2>Subject Details</h2>
                 </div>
                 <div class="info-grid-simple">
-                  <div class="info-box full"><label>Competency Name</label><p class="large-text">{{ selectedItem?.name }}</p></div>
+                  <div class="info-box full"><label>Subject Name</label><p class="large-text">{{ selectedItem?.name }}</p></div>
                   <div class="info-box"><label>Status</label><p><span class="status-pill status-active">{{ selectedItem?.status || 'Active' }}</span></p></div>
                   <div class="info-box"><label>Created At</label><p class="date-visible">{{ formatDate(selectedItem?.created_at) }}</p></div>
                 </div>
