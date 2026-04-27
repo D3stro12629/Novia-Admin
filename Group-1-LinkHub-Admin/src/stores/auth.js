@@ -10,6 +10,10 @@ export const useAuthStore = defineStore("auth", () => {
 
   // --- GETTERS ---
   const isAuthenticated = computed(() => !!token.value);
+  const isLoggedIn = computed(() => !!token.value);
+
+  // ✅ Role is inside roles array → roles[0].name
+  const userRole = computed(() => user.value?.roles?.[0]?.name || null);
 
   // --- ACTIONS ---
 
@@ -20,7 +24,7 @@ export const useAuthStore = defineStore("auth", () => {
   const login = async (credentials) => {
     isLoading.value = true;
     try {
-      // 1. Prepare Data (using FormData as per your previous requirement)
+      // 1. Prepare Data
       const formData = new FormData();
       formData.append("email_or_phone", credentials.email);
       formData.append("password", credentials.password);
@@ -39,16 +43,19 @@ export const useAuthStore = defineStore("auth", () => {
         throw new Error("No authentication token received.");
       }
 
-      // 5. Save State
+      // 5. Save Token
       setAuth(tokenValue);
 
-      // 6. Get User Profile immediately
+      // 6. Get User Profile (roles are inside user)
       await fetchProfile();
 
-      return res.data;
+      // 7. Return role so login component can route
+      const role = user.value?.roles?.[0]?.name || null;
+      return { success: true, role };
+
     } catch (error) {
       clearAuth();
-      throw formatError(error);
+      throw new Error(formatError(error));
     } finally {
       isLoading.value = false;
     }
@@ -61,9 +68,9 @@ export const useAuthStore = defineStore("auth", () => {
     if (!token.value) return;
     try {
       const res = await api.get("/api/me");
+      // ✅ Store full user object including roles array
       user.value = res.data.data;
     } catch (error) {
-      // If profile fetch fails (e.g., token expired), log out
       clearAuth();
       throw error;
     }
@@ -74,14 +81,11 @@ export const useAuthStore = defineStore("auth", () => {
    */
   const logout = async () => {
     try {
-      // Tell backend to invalidate token
       await api.delete("/api/logout");
     } catch (e) {
       console.error("Logout error:", e);
     } finally {
-      // Always clear local state even if API call fails
       clearAuth();
-      // Force page reload or redirect is handled in the component/router
     }
   };
 
@@ -90,20 +94,14 @@ export const useAuthStore = defineStore("auth", () => {
   const setAuth = (newToken) => {
     token.value = newToken;
     localStorage.setItem("token", newToken);
-    // Note: If your axios instance (api) needs a header update, do it here:
-    // api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
   };
 
   const clearAuth = () => {
     token.value = null;
     user.value = null;
     localStorage.removeItem("token");
-    // delete api.defaults.headers.common['Authorization'];
   };
 
-  /**
-   * Consistent Error Formatter
-   */
   const formatError = (error) => {
     if (error.response?.data) {
       const data = error.response.data;
@@ -117,8 +115,10 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     token,
     user,
+    userRole,
     isLoading,
     isAuthenticated,
+    isLoggedIn,
     login,
     fetchProfile,
     logout,

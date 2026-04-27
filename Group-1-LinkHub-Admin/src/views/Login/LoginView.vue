@@ -55,9 +55,6 @@
           </div>
         </Transition>
 
-        <!-- Form Options -->
-        <div class="form-options"></div>
-
         <!-- Submit Button -->
         <button :disabled="isLoading" type="submit" class="btn-primary-login">
           <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
@@ -73,34 +70,35 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const VALID_EMAIL = 'chandalen@gmail.com'
-const VALID_PASSWORD = '11223344Aa!'
-
 const credentials = reactive({ email_or_phone: '', password: '' })
 const errors = reactive({ email_or_phone: '', password: '' })
-const rememberMe = ref(false)
 const isLoading = ref(false)
 const showPassword = ref(false)
 const apiError = ref('')
+const submitted = ref(false)
 
+const detectedRole = computed(() => {
+  if (authStore.isLoggedIn) return authStore.userRole
+  return null
+})
+
+// ── Validation ────────────────────────────────────────────────────────────────
 const validate = () => {
-  // Email validation - must contain '@'
   if (!credentials.email_or_phone.trim()) {
     errors.email_or_phone = 'Required'
   } else if (!credentials.email_or_phone.includes('@')) {
-    errors.email_or_phone = 'forget to add @'
+    errors.email_or_phone = 'Forget to add @'
   } else {
     errors.email_or_phone = ''
   }
 
-  // Password validation - must have at least 4 numbers
   const numberCount = (credentials.password.match(/\d/g) || []).length
   if (!credentials.password.trim()) {
     errors.password = 'Required'
@@ -113,36 +111,32 @@ const validate = () => {
   return !errors.email_or_phone && !errors.password
 }
 
+// ── Handle Login ──────────────────────────────────────────────────────────────
 const handleLogin = async () => {
   apiError.value = ''
+  submitted.value = true
+
   if (!validate()) return
 
   isLoading.value = true
 
   try {
-    // 1. Check hardcoded credentials first (before calling API)
-    if (
-      credentials.email_or_phone !== VALID_EMAIL ||
-      credentials.password !== VALID_PASSWORD
-    ) {
-      throw new Error('Invalid email or password!')
-    }
-
-    // 2. Call auth store login → calls real API → gets real token
-    await authStore.login({
+  
+    const { success, role } = await authStore.login({
       email: credentials.email_or_phone,
       password: credentials.password,
     })
 
-    // 3. Remember me
-    if (rememberMe.value) {
-      localStorage.setItem('rememberMe', credentials.email_or_phone)
-    } else {
-      localStorage.removeItem('rememberMe')
+    if (success) {
+     
+      if (role === 'System Admin' || role === 'Service Provider') {
+        await router.push({ name: 'dashboard' })
+      } else {
+        // Role not allowed
+        authStore.clearAuth()
+        apiError.value = `Access denied. Role "${role}" is not permitted.`
+      }
     }
-
-    // 4. Redirect to dashboard
-    router.push({ name: 'dashboard' })
 
   } catch (error) {
     apiError.value = typeof error === 'string'
@@ -234,12 +228,6 @@ const handleLogin = async () => {
   font-weight: 600;
 }
 
-.forgot-link {
-  color: #6366f1;
-  font-size: 0.75rem;
-  text-decoration: none;
-}
-
 .custom-input-box {
   display: flex;
   align-items: center;
@@ -274,18 +262,6 @@ const handleLogin = async () => {
   border: none;
   color: #71717a;
   cursor: pointer;
-}
-
-.checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.label-text {
-  color: #a1a1aa;
-  font-size: 0.8rem;
 }
 
 .btn-primary-login {
