@@ -31,7 +31,6 @@
         <div class="input-group-wrapper">
           <div class="label-row">
             <label class="field-label">Password</label>
-         
           </div>
           <div :class="['custom-input-box', { 'input-error': errors.password }]">
             <i class="bi bi-lock input-icon"></i>
@@ -57,9 +56,7 @@
         </Transition>
 
         <!-- Form Options -->
-        <div class="form-options">
-       
-        </div>
+        <div class="form-options"></div>
 
         <!-- Submit Button -->
         <button :disabled="isLoading" type="submit" class="btn-primary-login">
@@ -83,7 +80,6 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-
 const VALID_EMAIL = 'chandalen@gmail.com'
 const VALID_PASSWORD = '11223344Aa!'
 
@@ -95,8 +91,25 @@ const showPassword = ref(false)
 const apiError = ref('')
 
 const validate = () => {
-  errors.email_or_phone = !credentials.email_or_phone.trim() ? 'Required' : ''
-  errors.password = !credentials.password.trim() ? 'Required' : ''
+  // Email validation - must contain '@'
+  if (!credentials.email_or_phone.trim()) {
+    errors.email_or_phone = 'Required'
+  } else if (!credentials.email_or_phone.includes('@')) {
+    errors.email_or_phone = 'forget to add @'
+  } else {
+    errors.email_or_phone = ''
+  }
+
+  // Password validation - must have at least 4 numbers
+  const numberCount = (credentials.password.match(/\d/g) || []).length
+  if (!credentials.password.trim()) {
+    errors.password = 'Required'
+  } else if (numberCount < 4) {
+    errors.password = 'Password must contain at least 4 numbers'
+  } else {
+    errors.password = ''
+  }
+
   return !errors.email_or_phone && !errors.password
 }
 
