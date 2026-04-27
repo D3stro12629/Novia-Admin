@@ -15,7 +15,6 @@
                             <span>Update Background</span>
                         </div>
 
-                        <!-- COVER DELETE SPAN (BOTTOM RIGHT) -->
                         <span v-if="profileStore.user?.cover" class="delete-cover-span" @click.stop="showCoverDeleteModal = true">
                             <i class="bi bi-trash3"></i>
                         </span>
@@ -28,7 +27,6 @@
                                 <div v-else class="avatar-letter">{{ profileStore.user?.full_name?.charAt(0) || 'U' }}
                                 </div>
                                 
-                                <!-- AVATAR DELETE SPAN -->
                                 <span v-if="profileStore.user?.avatar" class="delete-avatar-span" @click.stop="showAvatarDeleteModal = true">
                                     <i class="bi bi-x"></i>
                                 </span>
@@ -162,6 +160,13 @@
                                     </div>
                                     <span class="error-text" v-if="passwordFormErrors.new_pass_confirmation">{{
                                         passwordFormErrors.new_pass_confirmation }}</span>
+                                </div>
+
+                                <div class="security-footer">
+                                    <button class="env-btn-primary" @click="updatePassword" :disabled="profileStore.isProcessing">
+                                        <i class="bi bi-shield-lock"></i>
+                                        {{ profileStore.isProcessing ? 'Updating...' : 'Update Password' }}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -349,20 +354,18 @@ const coverFileInput = ref(null)
 const showEditModal = ref(false)
 const showCoverModal = ref(false)
 const showAvatarDeleteModal = ref(false)
-const showCoverDeleteModal = ref(false) // Added for cover delete
+const showCoverDeleteModal = ref(false) 
 const coverFile = ref(null)
 const coverPreview = ref('')
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const showPasswords = reactive({ old: false, new: false, confirm: false })
-const showDeleteModal = ref(false)
-const selectedItem = ref(null)
 
 const tabs = [
     { id: 'overview', label: 'Overview', icon: 'bi bi-grid-1x2-fill' },
     { id: 'security', label: 'Security', icon: 'bi bi-shield-lock-fill' }
 ]
 
-// FORMS
+// FORMS: PERSONAL INFO
 const personalForm = reactive({
     full_name: '', email: '', phone: '', dob: '',
     gender: null, current_city: '', home_town: '', portfolio_link: ''
@@ -374,6 +377,7 @@ const { errors: personalFormErrors, validate: validateAllPersonal, validateField
     phone: [validationRules.required('Phone is required')]
 })
 
+// FORMS: PASSWORD
 const passwordForm = reactive({ old_pass: '', new_pass: '', new_pass_confirmation: '' })
 const { errors: passwordFormErrors, validate: validateAllPassword, validateField: validatePasswordField, reset: resetPasswordValidation } = useFormValidation(passwordForm, {
     old_pass: [validationRules.required('Current password is required')],
@@ -391,7 +395,7 @@ const { errors: passwordFormErrors, validate: validateAllPassword, validateField
 
 onMounted(async () => { await profileStore.fetchProfile() })
 
-// ACTIONS
+// ACTIONS: PERSONAL INFO
 const openEditModal = () => {
     Object.assign(personalForm, profileStore.user)
     showEditModal.value = true
@@ -404,6 +408,30 @@ const savePersonalInfo = async () => {
         toast.success('Core Profile Synchronized')
         showEditModal.value = false
     } catch { toast.error('Synchronization failed') }
+}
+
+// ACTIONS: SECURITY (NEW)
+const updatePassword = async () => {
+    if (!validateAllPassword()) {
+        toast.error('Please fix validation errors')
+        return
+    }
+    
+    try {
+        await profileStore.changePassword({
+            old_password: passwordForm.old_pass,
+            password: passwordForm.new_pass,
+            password_confirmation: passwordForm.new_pass_confirmation
+        })
+        toast.success('Security protocol updated')
+        // Reset form
+        passwordForm.old_pass = ''
+        passwordForm.new_pass = ''
+        passwordForm.new_pass_confirmation = ''
+        resetPasswordValidation()
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Password update failed')
+    }
 }
 
 // AVATAR ACTIONS
@@ -429,7 +457,7 @@ const handleFileUpload = async (e) => {
 // COVER ACTIONS
 const confirmDeleteCover = async () => {
     try {
-        await profileStore.removeCover() // Ensure this matches your store action
+        await profileStore.removeCover()
         toast.success('Environment cover removed')
         showCoverDeleteModal.value = false
     } catch { toast.error('Failed to remove cover') }
@@ -457,11 +485,6 @@ const uploadCoverFile = async () => {
         toast.success('Environment cover remapped')
         showCoverModal.value = false
     } catch { toast.error('Upload failed') }
-}
-
-const handleDelete = (item) => {
-    selectedItem.value = item;
-    showDeleteModal.value = true
 }
 
 const openCoverFull = () => coverPreview.value && window.open(coverPreview.value, '_blank')
@@ -523,7 +546,6 @@ watch([showEditModal, showCoverModal, showAvatarDeleteModal, showCoverDeleteModa
     transition: transform 0.5s ease;
 }
 
-/* NEW DELETE COVER SPAN (BOTTOM RIGHT) */
 .delete-cover-span {
     position: absolute;
     bottom: 15px;
@@ -548,9 +570,7 @@ watch([showEditModal, showCoverModal, showAvatarDeleteModal, showCoverDeleteModa
     background: #ef4444;
 }
 
-.cover-container:hover .cover-image {
-    transform: scale(1.05);
-}
+.cover-container:hover .cover-image { transform: scale(1.05); }
 
 .cover-overlay {
     position: absolute;
@@ -569,9 +589,7 @@ watch([showEditModal, showCoverModal, showAvatarDeleteModal, showCoverDeleteModa
     background: rgba(0, 0, 0, 0.3);
 }
 
-.cover-container:hover .cover-overlay {
-    opacity: 1;
-}
+.cover-container:hover .cover-overlay { opacity: 1; }
 
 .scanline {
     position: absolute;
@@ -631,13 +649,8 @@ watch([showEditModal, showCoverModal, showAvatarDeleteModal, showCoverDeleteModa
     transition: 0.2s;
 }
 
-.delete-avatar-span:hover {
-    transform: scale(1.1);
-}
-
-.avatar-outer:hover {
-    transform: translateY(-5px);
-}
+.delete-avatar-span:hover { transform: scale(1.1); }
+.avatar-outer:hover { transform: translateY(-5px); }
 
 .avatar-letter {
     width: 100%;
@@ -808,15 +821,20 @@ watch([showEditModal, showCoverModal, showAvatarDeleteModal, showCoverDeleteModa
 .core-input label { display: block; font-size: 0.65rem; text-transform: uppercase; color: #71717a; margin-bottom: 4px; font-weight: 700; }
 .core-input input, .core-input select { width: 100%; background: #18181b; border: 1px solid #27272a; color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; }
 .core-modal-footer { padding: 1rem 1.25rem; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #27272a; }
-.env-btn-primary { background: var(--accent-color); color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.env-btn-primary { background: var(--accent-color); color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
 /* SECURITY UI */
 .security-box { max-width: 400px; }
+.security-footer { margin-top: 2rem; }
 .input-wrap { margin-bottom: 1.2rem; }
 .input-wrap label { display: block; font-size: 0.75rem; margin-bottom: 6px; color: var(--text-dim); }
 .password-field-wrapper { position: relative; display: flex; align-items: center; }
 .password-field-wrapper input { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 10px 45px 10px 12px; border-radius: 8px; font-size: 0.9rem; }
 .eye-toggle { position: absolute; right: 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; padding: 5px; display: flex; }
+
+/* VALIDATION STATES */
+.error-text { color: #ef4444; font-size: 0.7rem; margin-top: 4px; display: block; font-weight: 500; }
+.has-error input { border-color: #ef4444 !important; }
 
 @media (max-width: 768px) {
     .main-layout-grid { grid-template-columns: 1fr; }

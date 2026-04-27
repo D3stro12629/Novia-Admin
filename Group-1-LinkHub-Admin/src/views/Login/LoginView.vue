@@ -94,8 +94,8 @@ const validate = () => {
   // Email validation - must contain '@'
   if (!credentials.email_or_phone.trim()) {
     errors.email_or_phone = 'Required'
-  } else if (!credentials.email_or_phone.includes('@')) {
-    errors.email_or_phone = 'forget to add @'
+  } else if (!credentials.email_or_phone.includes('@gmail.com')) {
+    errors.email_or_phone = 'Please enter a valid Gmail address'
   } else {
     errors.email_or_phone = ''
   }

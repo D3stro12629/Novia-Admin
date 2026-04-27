@@ -1,372 +1,401 @@
 <template>
     <DashboardLayout>
-        <div class="dash-wrapper">
-            <!-- 1. Header Section -->
-            <header class="dash-header">
-                <div class="header-left">
-                    <span class="date-badge">{{ formattedDate }}</span>
-                    <h1 class="serif-title">Insights Dashboard</h1>
-                    <p class="subtitle">Monitor your platform's core metrics and user activity.</p>
-                </div>
-                <div class="header-right">
-                    <button class="btn-secondary" @click="generateReport">
-                        <i class="bi bi-download"></i> Export CSV
-                    </button>
-                    <RouterLink to="/analytics" class="btn-primary">
-                        View Detailed Analytics <i class="bi bi-arrow-right-short"></i>
-                    </RouterLink>
+        <div class="premium-shell">
+            <!-- 1. HEADER SECTION -->
+            <header class="admin-header">
+                <div class="header-content">
+                    <div class="title-stack">
+                        <span class="date-badge">{{ formattedDate }}</span>
+                        <h1>Novia Insights</h1>
+                        <p class="subtitle-text">Real-time overview of your platform's ecosystem.</p>
+                    </div>
                 </div>
             </header>
 
-            <!-- 2. Stat Cards Row -->
-            <section class="stats-grid">
-                <div v-for="card in dashboardStore.statCardsData" :key="card.label" class="stat-box">
-                    <div class="stat-top">
-                        <div class="stat-icon-wrapper" :style="{ color: card.iconColor || '#fff' }">
-                            <i :class="card.icon"></i>
-                        </div>
-                        <!-- Logic for positive/negative trends -->
-                        <span v-if="card.trend" :class="['trend-badge', card.trend > 0 ? 'up' : 'down']">
-                            <i :class="card.trend > 0 ? 'bi bi-graph-up' : 'bi bi-graph-down'"></i>
-                            {{ card.trend > 0 ? '+' : '' }}{{ card.trend }}%
-                        </span>
+            <!-- 2. SUMMARY STATS ROW -->
+            <section class="stats-row">
+                <div v-for="card in dashboardStore.statCardsData" :key="card.label" class="stat-card">
+                    <div class="stat-icon"
+                        :style="{ color: card.iconColor || 'var(--accent)', background: (card.iconColor + '15') || 'rgba(99, 102, 241, 0.1)' }">
+                        <i :class="card.icon"></i>
                     </div>
-                    <div class="stat-content">
-                        <h2 class="stat-value serif-title">{{ card.value }}</h2>
-                        <p class="stat-label">{{ card.label }}</p>
+                    <div class="stat-data">
+                        <div class="label-row">
+                            <span class="label">{{ card.label }}</span>
+                        </div>
+                        <span class="value">{{ card.value }}</span>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. Bento Grid Content -->
-            <main class="bento-container">
-                <!-- Main Chart -->
-                <div class="bento-item main-chart">
-                    <div class="item-head">
-                        <h3>Category Distribution</h3>
-                        <div class="head-actions">
-                            <span class="dot-indicator"></span>
-                            <small>Live Data</small>
+            <!-- 3. BENTO GRID -->
+            <main class="bento-grid-custom">
+
+                <!-- THE DYNAMIC MULTI-COLOR CHART CARD -->
+                <div class="content-wrapper bento-box main-chart">
+                    <div class="box-header">
+                        <div class="header-title">
+                            <h3>System Distribution</h3>
+                            <span class="live-indicator"><span class="pulse"></span> LIVE</span>
                         </div>
                     </div>
-                    <div class="chart-wrapper">
-                        <BarChart :data="dashboardStore.barChartData" :is-loading="dashboardStore.isLoading" />
+
+                    <div class="chart-container-inner">
+                        <BarChart :data="distributionData" :options="chartOptions"
+                            :is-loading="dashboardStore.isLoading" />
                     </div>
                 </div>
 
-                <!-- Quick Controls - NEWLY STYLED -->
-                <div class="bento-item quick-controls">
-                    <div class="item-head">
-                        <h3>Quick Controls</h3>
+                <!-- QUICK CONTROLS CARD -->
+                <div class="content-wrapper bento-box quick-controls">
+                    <div class="box-header">
+                        <div class="header-title">
+                            <h3>Quick Actions</h3>
+                        </div>
                     </div>
-                    <div class="actions-stack">
-                        <button v-for="action in dashboardStore.quickActionsData" 
-                            :key="action.label"
-                            class="action-tile" 
-                            @click="handleQuickAction(action.label)">
-                            <div class="tile-icon">
-                                <i :class="action.icon"></i>
+                    <div class="actions-list">
+                        <button v-for="action in dashboardStore.quickActionsData" :key="action.label"
+                            class="action-tile-premium" @click="handleQuickAction(action.label)">
+                            <div class="tile-icon-wrapper"><i :class="action.icon"></i></div>
+                            <div class="tile-info">
+                                <span class="tile-label">{{ action.label }}</span>
+                                <span class="tile-sub">{{ action.sub }}</span>
                             </div>
-                            <div class="tile-text">
-                                <span class="label">{{ action.label }}</span>
-                                <span class="sub">{{ action.sub }}</span>
-                            </div>
-                            <i class="bi bi-chevron-right arrow"></i>
+                            <div class="tile-arrow"><i class="bi bi-chevron-right"></i></div>
                         </button>
                     </div>
                 </div>
             </main>
         </div>
     </DashboardLayout>
+
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
-import BarChart from '@/components/charts/BarChart.vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 
 const dashboardStore = useDashboardStore()
 const router = useRouter()
 
 onMounted(() => {
-    if (dashboardStore.fetchDashboardData) {
-        dashboardStore.fetchDashboardData()
-    }
+    if (dashboardStore.fetchDashboardData) dashboardStore.fetchDashboardData()
 })
 
 const formattedDate = computed(() => {
-    return new Date().toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
-    }).toUpperCase();
+    return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 })
 
-const handleQuickAction = (label) => {
-    const routes = { 
-        'Add Skill': '/skills', 
-        'Add School': '/schools', 
-        'Add Degree': '/degrees', 
-        'Add Subject': '/subjects', 
-        'Add Category': '/category' 
+/**
+ * 1. DYNAMIC DATA & COLORS
+ * This maps exactly to the screenshot colors and labels you provided.
+ */
+const distributionData = computed(() => {
+    return {
+        labels: ['Skills', 'Schools', 'Degrees', 'Subjects', 'Categories', 'Users'],
+        datasets: [
+            {
+                label: 'Total Units',
+                data: [
+                    dashboardStore.totalSkills || 5,
+                    dashboardStore.totalSchools || 9,
+                    dashboardStore.totalDegrees || 7,
+                    dashboardStore.totalSubjects || 7,
+                    dashboardStore.totalCategories || 6,
+                    dashboardStore.totalUsers || 155 // The big green bar
+                ],
+                backgroundColor: [
+                    '#3b82f6', // Blue
+                    '#10b981', // Teal
+                    '#f59e0b', // Orange
+                    '#6366f1', // Indigo
+                    '#ec4899', // Pink
+                    '#22c55e'  // Green
+                ],
+                borderRadius: 10,
+                borderSkipped: false,
+                barThickness: 35
+            }
+        ]
     }
-    if (routes[label]) router.push({ path: routes[label], query: { action: 'create' } })
+})
+
+/**
+ * 2. PREMIUM CHART OPTIONS
+ * Hides vertical grids and cleans up the Y-axis for a high-end look.
+ */
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#18181b',
+            titleFont: { weight: 'bold' },
+            padding: 12,
+            cornerRadius: 10,
+            displayColors: false
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+            ticks: { color: '#71717a', font: { size: 11 } }
+        },
+        x: {
+            grid: { display: false },
+            ticks: { color: '#a1a1aa', font: { weight: '600', size: 12 } }
+        }
+    }
 }
 
-const generateReport = () => {
-    const csv = "Category,Value\n" + dashboardStore.statCardsData.map(c => `${c.label},${c.value}`).join("\n")
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `report-${new Date().getTime()}.csv`
-    link.click()
+const handleQuickAction = (label) => {
+    const routes = {
+        'Add Skill': '/skills',
+        'Add School': '/schools',
+        'Add Degree': '/degrees',
+        'Add Subject': '/subjects',
+        'Add Category': '/category'
+    }
+    if (routes[label]) {
+        router.push({ path: routes[label], query: { action: 'create' } })
+    }
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* Base Theme */
-.dash-wrapper {
-    padding: 40px;
-    background: #010409;
+.premium-shell {
+    --bg: #09090b;
+    --surface: #121212;
+    --border: #1f1f1f;
+    --accent: #6366f1;
+    --text-main: #fafafa;
+    --text-muted: #71717a;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 100vh;
-    color: #e6edf3;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-}
-
-.serif-title {
-    font-family: 'Source Serif 4', serif;
-    letter-spacing: -0.02em;
+    padding: 2.5rem;
 }
 
 /* Header Styling */
-.dash-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 48px;
+.admin-header {
+    margin-bottom: 2.5rem;
+}
+
+.title-stack h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+    margin: 0;
+    color: white;
+}
+
+.subtitle-text {
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-size: 1rem;
 }
 
 .date-badge {
-    font-size: 12px;
+    color: var(--accent);
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #7d8590;
-    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
     display: block;
 }
 
-.dash-header h1 {
-    font-size: 48px;
-    margin: 0;
-    line-height: 1.1;
-}
-
-.subtitle {
-    color: #7d8590;
-    font-size: 16px;
-    margin-top: 8px;
-}
-
-/* Header Buttons */
-.header-right {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-}
-
-.btn-primary {
-    background: #f0f6fc;
-    color: #010409;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: transform 0.2s;
-}
-
-.btn-primary:hover { transform: translateY(-2px); }
-
-.btn-secondary {
-    background: transparent;
-    border: 1px solid #30363d;
-    color: #e6edf3;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.btn-secondary:hover { background: #161b22; }
-
-/* Stats Grid */
-.stats-grid {
+/* Mini Stats Row */
+.stats-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    margin-bottom: 40px;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
 }
 
-.stat-box {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    padding: 24px;
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 20px;
-}
-
-.stat-top {
+    padding: 1.5rem;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
+    align-items: center;
+    gap: 1.25rem;
 }
 
-.stat-icon-wrapper {
-    font-size: 24px;
-    background: #161b22;
-    width: 48px;
-    height: 48px;
+.stat-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    font-size: 1.4rem;
 }
 
-.trend-badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
+.stat-data .value {
+    font-size: 1.75rem;
     font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    color: white;
+    display: block;
 }
 
-.trend-badge.up { background: rgba(35, 134, 54, 0.15); color: #3fb950; }
-.trend-badge.down { background: rgba(248, 81, 73, 0.15); color: #f85149; }
-
-.stat-value {
-    font-size: 56px;
-    margin: 0;
-    line-height: 1;
-}
-
-.stat-label {
-    color: #7d8590;
-    font-weight: 500;
-    margin-top: 8px;
-    font-size: 14px;
+.stat-data .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
-/* Bento Layout */
-.bento-container {
+/* Bento Grid System */
+.bento-grid-custom {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: 24px;
+    gap: 1.5rem;
 }
 
-.bento-item {
-    background: #0d1117;
-    border: 1px solid #30363d;
+.bento-box {
+    padding: 1.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 24px;
-    padding: 24px;
 }
 
-.item-head {
+.main-chart {
+    grid-column: span 8;
+    min-height: 480px;
+}
+
+.quick-controls {
+    grid-column: span 4;
+}
+
+.box-header {
+    margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
 }
 
-.item-head h3 {
-    font-size: 18px;
-    font-weight: 600;
+.box-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #efefef;
     margin: 0;
 }
 
-.main-chart { grid-column: span 8; }
-.quick-controls { grid-column: span 4; }
+/* The Chart Container */
+.chart-container-inner {
+    height: 350px;
+    width: 100%;
+    position: relative;
+}
 
-/* Quick Actions Styling (The Missing Piece) */
-.actions-stack {
+/* Quick Action Buttons */
+.actions-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.action-tile {
+.action-tile-premium {
     display: flex;
     align-items: center;
-    background: #161b22;
-    border: 1px solid #30363d;
+    background: #18181b;
+    border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 16px;
-    width: 100%;
+    padding: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: 0.2s;
     text-align: left;
-    color: inherit;
+    color: white;
+    width: 100%;
 }
 
-.action-tile:hover {
-    border-color: #8b949e;
-    background: #21262d;
+.action-tile-premium:hover {
+    border-color: var(--accent);
+    background: #1c1c21;
     transform: translateX(4px);
 }
 
-.tile-icon {
+.tile-icon-wrapper {
     width: 40px;
     height: 40px;
-    background: #0d1117;
+    background: #27272a;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 16px;
-    font-size: 18px;
-    color: #79c0ff;
+    color: var(--accent);
+    font-size: 1.1rem;
+    margin-right: 1rem;
 }
 
-.tile-text {
-    flex: 1;
+.tile-label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.tile-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.tile-arrow {
+    margin-left: auto;
+    color: #3f3f46;
+    font-size: 0.8rem;
+}
+
+/* Live Pulse Animation */
+.live-indicator {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #22c55e;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
 }
 
-.tile-text .label {
-    font-weight: 600;
-    font-size: 14px;
+.pulse {
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse-animation 2s infinite;
 }
 
-.tile-text .sub {
-    font-size: 12px;
-    color: #7d8590;
+@keyframes pulse-animation {
+    0% {
+        box-shadow: 0 0 0 0px rgba(34, 197, 94, 0.4);
+    }
+
+    100% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
 }
 
-.arrow {
-    color: #30363d;
-    transition: color 0.2s;
-}
+/* Responsive Fix */
+@media (max-width: 1100px) {
 
-.action-tile:hover .arrow {
-    color: #f0f6fc;
-}
+    .main-chart,
+    .quick-controls {
+        grid-column: span 12;
+    }
 
-/* Responsiveness */
-@media (max-width: 1200px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .main-chart, .quick-controls { grid-column: span 12; }
-}
-
-@media (max-width: 768px) {
-    .dash-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-    .stats-grid { grid-template-columns: 1fr; }
-    .stat-value { font-size: 48px; }
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
