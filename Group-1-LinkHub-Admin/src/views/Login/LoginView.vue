@@ -89,12 +89,12 @@ const detectedRole = computed(() => {
   return null
 })
 
-// ── Validation ────────────────────────────────────────────────────────────────
+// ── Validation 
 const validate = () => {
   if (!credentials.email_or_phone.trim()) {
     errors.email_or_phone = 'Required'
-  } else if (!credentials.email_or_phone.includes('@')) {
-    errors.email_or_phone = 'Forget to add @'
+  } else if (!credentials.email_or_phone.includes('@gmail.com')) {
+    errors.email_or_phone = 'Please enter a valid Gmail address'
   } else {
     errors.email_or_phone = ''
   }
