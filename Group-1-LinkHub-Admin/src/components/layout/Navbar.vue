@@ -1,67 +1,93 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
-defineEmits(['toggleSidebar']);
-
+// Stores & Navigation
+const authStore = useAuthStore();
 const router = useRouter();
+const emit = defineEmits(['toggleSidebar']);
 
-// Theme state
-const isDark = ref(true);
-const toggleTheme = () => {
-    isDark.value = !isDark.value;
-};
+// --- STATE ---
+const isLoading = ref(true);
 
-// Navigate to Profile route
+// --- COMPUTED (Linked to Store) ---
+const user = computed(() => ({
+    name: authStore.user?.full_name || 'Guest User',
+    role: authStore.user?.role || 'Member',
+    avatar: authStore.user?.avatar || `https://ui-avatars.com/api/?name=${authStore.user?.full_name || 'U'}&background=random`
+}));
+
+// --- ACTIONS ---
 const goToProfile = () => {
     router.push({ name: 'profile' });
 };
+
+// Error handling for broken avatar images
+const onAvatarError = (e) => {
+    e.target.src = `https://ui-avatars.com/api/?name=${user.value.name}&background=random`;
+};
+
+// Initialize Profile from Store
+const fetchProfile = async () => {
+    isLoading.value = true;
+    try {
+        await authStore.fetchProfile();
+    } catch (error) {
+        console.error("Error fetching profile from store:", error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+onMounted(() => {
+    fetchProfile();
+});
 </script>
 
 <template>
     <nav class="navbar">
-        <!-- LEFT: Toggle & Logo (UNCHANGED) -->
+        <!-- LEFT: Brand & Menu -->
         <div class="nav-left">
-            <div class="menu-trigger" @click="$emit('toggleSidebar')">
-                <span class="material-icons btn-icon">menu_open</span>
-            </div>
-            <div class="logo">
-                <div class="logo-orb">
-                    <span class="material-icons logo-icon">rocket_launch</span>
+            <button class="icon-btn menu-btn" @click="emit('toggleSidebar')">
+                <span class="material-icons">menu_open</span>
+            </button>
+            
+            <div class="brand">
+                <div class="brand-logo">
+                    <span class="material-icons">rocket_launch</span>
                 </div>
-                <span class="logo-text">Rocker</span>
+                <span class="brand-name">Connexion</span>
             </div>
         </div>
 
-        <!-- CENTER: Search (UNCHANGED) -->
+        <!-- CENTER: Search -->
         <div class="nav-center">
-            <div class="search-bar">
-                <span class="material-icons search-i">search</span>
-                <input type="text" placeholder="Search anything..." />
-                <div class="search-shortcut">/</div>
+            <div class="search-container">
+                <span class="material-icons search-icon">search</span>
+                <input type="text" placeholder="Search dashboard..." />
+                <kbd class="search-kbd">/</kbd>
             </div>
         </div>
 
-        <!-- RIGHT: Theme Toggle & Profile -->
+        <!-- RIGHT: Profile -->
         <div class="nav-right">
-            <div class="icon-actions">
-                <!-- Theme Switch Icon -->
-                <div class="action-btn" @click="toggleTheme" :title="isDark ? 'Switch to Light' : 'Switch to Dark'">
-                    <span class="material-icons">
-                        {{ isDark ? 'light_mode' : 'dark_mode' }}
-                    </span>
+            <div class="profile-card" @click="goToProfile" :class="{ 'is-loading': isLoading }">
+                <div class="profile-text">
+                    <span class="profile-name">{{ isLoading ? 'Loading...' : user.name }}</span>
+                    <span class="profile-role">{{ isLoading ? 'Please wait' : user.role }}</span>
                 </div>
-            </div>
-
-            <!-- Profile Section -->
-            <div class="profile-section" @click="goToProfile">
-                <div class="profile-info">
-                    <p class="user-name">Pauline Seitz</p>
-                    <p class="user-role">Web Designer</p>
-                </div>
-                <div class="avatar-wrapper">
-                    <img src="https://i.pravatar.cc/40?u=pauline" alt="Profile" />
-                    <div class="status-indicator"></div>
+                
+                <div class="avatar-container">
+                    <img 
+                        v-if="!isLoading" 
+                        :src="user.avatar" 
+                        @error="onAvatarError"
+                        alt="User Avatar" 
+                        class="avatar-img" 
+                    />
+                    <div v-else class="avatar-placeholder"></div>
+                    <div class="online-status"></div>
                 </div>
             </div>
         </div>
@@ -69,205 +95,178 @@ const goToProfile = () => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* Main Container */
 .navbar {
-    height: 60px;
-    width: 100%;
+    height: 64px;
     background: #09090b;
+    border-bottom: 1px solid #1f1f23;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    border-bottom: 1px solid #1f1f23;
+    padding: 0 20px;
+    font-family: 'Inter', sans-serif;
     position: sticky;
     top: 0;
-    z-index: 1100;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-/* --- LEFT SECTION --- */
-.nav-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    min-width: 230px;
-}
-
-.menu-trigger {
-    cursor: pointer;
-    color: #71717a;
-    display: flex;
-    align-items: center;
-    transition: all 0.2s ease;
-}
-
-.menu-trigger:hover {
-    color: #6366f1;
-    transform: scale(1.1);
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.logo-orb {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #6366f1, #a855f7);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-}
-
-.logo-icon {
-    font-size: 18px;
-    color: #fff;
-}
-
-.logo-text {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-}
-
-/* --- CENTER SECTION --- */
-.nav-center {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    max-width: 500px;
-}
-
-.search-bar {
-    display: flex;
-    align-items: center;
-    background: #121215;
-    border: 1px solid #1f1f23;
-    padding: 6px 14px;
-    border-radius: 12px;
-    width: 100%;
-    gap: 10px;
+    z-index: 1000;
     transition: all 0.3s ease;
 }
 
-.search-bar:focus-within {
-    border-color: #6366f1;
-    background: #000;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.search-i {
-    font-size: 18px;
-    color: #71717a;
-}
-
-.search-bar input {
-    background: none;
-    border: none;
-    color: #fafafa;
-    outline: none;
-    width: 100%;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.search-shortcut {
-    color: #3f3f46;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: 1px solid #27272a;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: #18181b;
-}
-
-/* --- RIGHT SECTION --- */
-.nav-right {
+/* --- LEFT --- */
+.nav-left {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
 }
 
-.icon-actions {
+.brand {
     display: flex;
     align-items: center;
+    gap: 10px;
 }
 
-.action-btn {
-    width: 38px;
-    height: 38px;
+.brand-logo {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #71717a;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
-.action-btn:hover {
+.brand-logo .material-icons { font-size: 20px; }
+
+.brand-name {
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+}
+
+/* --- CENTER (Search) --- */
+.nav-center {
+    flex: 1;
+    max-width: 480px;
+    margin: 0 20px;
+}
+
+.search-container {
     background: #18181b;
-    color: #fff;
-}
-
-.action-btn .material-icons {
-    font-size: 22px;
-}
-
-/* PROFILE SECTION */
-.profile-section {
+    border: 1px solid #27272a;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding-left: 20px;
-    border-left: 1px solid #1f1f23;
+    padding: 0 12px;
+    height: 38px;
+    transition: 0.2s;
+}
+
+.search-container:focus-within {
+    border-color: #6366f1;
+    background: #000;
+}
+
+.search-icon { color: #71717a; font-size: 18px; }
+
+.search-container input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0 10px;
+    width: 100%;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.search-kbd {
+    background: #27272a;
+    color: #a1a1aa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+/* --- RIGHT --- */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
 }
 
-.profile-section:hover {
-    opacity: 0.8;
+.icon-btn:hover {
+    background: #18181b;
+    color: white;
 }
 
-.profile-info {
+/* PROFILE CARD */
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+.profile-card:hover {
+    background: #18181b;
+}
+
+.profile-text {
+    display: flex;
+    flex-direction: column;
     text-align: right;
 }
 
-.user-name {
+.profile-name {
+    color: white;
     font-size: 0.85rem;
-    font-weight: 700;
-    color: #fff;
-    margin: 0;
+    font-weight: 600;
 }
 
-.user-role {
-    font-size: 0.75rem;
+.profile-role {
     color: #71717a;
-    margin: 0;
-    font-weight: 500;
+    font-size: 0.75rem;
 }
 
-.avatar-wrapper {
+.avatar-container {
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
 }
 
-.avatar-wrapper img {
+.avatar-img, .avatar-placeholder {
     width: 100%;
     height: 100%;
     border-radius: 10px;
     object-fit: cover;
-    border: 1px solid #27272a;
 }
 
-.status-indicator {
+.avatar-placeholder {
+    background: #27272a;
+    animation: pulse 1.5s infinite;
+}
+
+.online-status {
     position: absolute;
     bottom: -2px;
     right: -2px;
@@ -278,15 +277,17 @@ const goToProfile = () => {
     border: 2px solid #09090b;
 }
 
+/* LOADING ANIMATION */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+/* RESPONSIVE */
 @media (max-width: 768px) {
-
-    .profile-info,
-    .nav-center {
+    .nav-center, .profile-text {
         display: none;
-    }
-
-    .nav-left {
-        min-width: auto;
     }
 }
 </style>

@@ -1,70 +1,3 @@
-<script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
-const props = defineProps({
-    isOpen: { type: Boolean, default: true }
-});
-
-const route = useRoute();
-const router = useRouter();
-
-// --- STATE ---
-const isSettingsExpanded = ref(false);
-const showLogoutModal = ref(false);
-
-const settingsItems = [
-    { name: 'Users', icon: 'group', path: '/users' },
-    { name: 'Categories', icon: 'category', path: '/category' },
-    { name: 'Degree', icon: 'workspace_premium', path: '/degrees' },
-    { name: 'Schools', icon: 'school', path: '/schools' },
-    { name: 'Skills', icon: 'psychology', path: '/skills' },
-    { name: 'Subjects', icon: 'book', path: '/subjects' },
-];
-
-// --- LOGIC ---
-const isActive = (path) => route.path === path;
-
-// Computed: Check if the current URL is one of the settings pages
-const isRouteInSettings = computed(() =>
-    settingsItems.some(item => route.path.startsWith(item.path))
-);
-
-// FIX: This watcher prevents the menu from closing when you navigate
-watch(
-    () => route.path,
-    () => {
-        if (isRouteInSettings.value) {
-            isSettingsExpanded.value = true;
-        }
-    },
-    { immediate: true }
-);
-
-// Toggle logic (manual click)
-const toggleSettings = () => {
-    if (props.isOpen) {
-        isSettingsExpanded.value = !isSettingsExpanded.value;
-    }
-};
-
-const navigateTo = (path) => {
-    router.push(path);
-    // Note: We DO NOT set isSettingsExpanded to false here
-};
-
-const handleLogout = () => {
-    showLogoutModal.value = false;
-    router.push('/login');
-};
-
-// Collapses submenu if the sidebar is closed (mini mode)
-watch(() => props.isOpen, (newVal) => {
-    if (!newVal) isSettingsExpanded.value = false;
-    else if (isRouteInSettings.value) isSettingsExpanded.value = true;
-});
-</script>
-
 <template>
     <aside :class="['sidebar', { 'closed': !isOpen }]">
         <div class="sidebar-wrapper">
@@ -116,10 +49,12 @@ watch(() => props.isOpen, (newVal) => {
                         <span v-if="isOpen" class="nav-label">Help & Support</span>
                     </div>
 
+
                     <div class="nav-item logout-item" @click="showLogoutModal = true" :title="!isOpen ? 'Logout' : ''">
                         <span class="material-icons">logout</span>
                         <span v-if="isOpen" class="nav-label">Logout</span>
                     </div>
+
                 </nav>
             </div>
         </div>
@@ -135,6 +70,7 @@ watch(() => props.isOpen, (newVal) => {
                     <p>Are you sure you want to end your session?</p>
                     <div class="modal-btns">
                         <button class="btn-back" @click="showLogoutModal = false">Cancel</button>
+
                         <button class="btn-out" @click="handleLogout">Logout</button>
                     </div>
                 </div>
@@ -238,7 +174,6 @@ watch(() => props.isOpen, (newVal) => {
     color: var(--text-muted) !important;
 }
 
-/* Submenu Styling */
 .submenu-container {
     margin-left: 20px;
     border-left: 1px solid #1f1f23;
@@ -269,7 +204,6 @@ watch(() => props.isOpen, (newVal) => {
     font-size: 20px !important;
 }
 
-/* Transitions */
 .dropdown-enter-active,
 .dropdown-leave-active {
     transition: all 0.3s ease;
@@ -307,7 +241,6 @@ watch(() => props.isOpen, (newVal) => {
     color: #ef4444;
 }
 
-/* Modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -388,3 +321,78 @@ watch(() => props.isOpen, (newVal) => {
     display: none;
 }
 </style>
+
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth'; // 1. Import your auth store
+
+const props = defineProps({
+    isOpen: { type: Boolean, default: true }
+});
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore(); // 2. Initialize the store
+
+// --- STATE ---
+const isSettingsExpanded = ref(false);
+const showLogoutModal = ref(false);
+
+const settingsItems = [
+    { name: 'Users', icon: 'group', path: '/users' },
+    { name: 'Categories', icon: 'category', path: '/category' },
+    { name: 'Degree', icon: 'workspace_premium', path: '/degrees' },
+    { name: 'Schools', icon: 'school', path: '/schools' },
+    { name: 'Skills', icon: 'psychology', path: '/skills' },
+    { name: 'Subjects', icon: 'book', path: '/subjects' },
+];
+
+// --- LOGIC ---
+const isActive = (path) => route.path === path;
+
+const isRouteInSettings = computed(() =>
+    settingsItems.some(item => route.path.startsWith(item.path))
+);
+
+watch(
+    () => route.path,
+    () => {
+        if (isRouteInSettings.value) {
+            isSettingsExpanded.value = true;
+        }
+    },
+    { immediate: true }
+);
+
+const toggleSettings = () => {
+    if (props.isOpen) {
+        isSettingsExpanded.value = !isSettingsExpanded.value;
+    }
+};
+
+const navigateTo = (path) => {
+    router.push(path);
+};
+
+// ✅ FIXED: Now calls the API and clears state via the Pinia Store
+const handleLogout = async () => {
+    try {
+        // This calls api.delete("/api/logout") AND clears localStorage/token
+        await authStore.logout();
+    } catch (error) {
+        console.error("Logout failed:", error);
+    } finally {
+        // Close modal and send user to login regardless of API success
+        showLogoutModal.value = false;
+        router.push('/login');
+    }
+};
+
+watch(() => props.isOpen, (newVal) => {
+    if (!newVal) isSettingsExpanded.value = false;
+    else if (isRouteInSettings.value) isSettingsExpanded.value = true;
+});
+</script>
+
+<!-- The Template and Style remain the same as you provided -->

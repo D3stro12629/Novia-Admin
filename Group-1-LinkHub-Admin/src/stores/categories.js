@@ -24,45 +24,22 @@ export const useCategoryStore = defineStore("category", () => {
     }
   };
 
-  const fetchCategoryById = async (id) => {
-    try {
-      const res = await api.get(`/api/categories/${id}`);
-      return res.data.data;
-    } catch (err) {
-      console.error("Error fetching category:", err);
-    }
-  };
-
-  const createCategory = async (payload) => {
+const createCategory = async (payload) => {
     try {
       isProcessing.value = true;
       const formData = new FormData();
-
-      // Add image file if present
+      formData.append('name', payload.name);
       if (payload.image instanceof File) {
         formData.append('image', payload.image);
       }
 
-      // Add name field
-      if (payload.name) {
-        formData.append('name', payload.name);
-      }
-
-      // Add any other fields from payload
-      Object.keys(payload).forEach(key => {
-        if (key !== 'image' && key !== 'name' && payload[key] !== undefined) {
-          formData.append(key, payload[key]);
-        }
-      });
-
       const res = await api.post(`/api/categories`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data;
     } catch (err) {
-      console.log(err);
+      console.error("Create Error:", err);
+      throw err; // THIS IS IMPORTANT
     } finally {
       isProcessing.value = false;
     }
@@ -72,29 +49,21 @@ export const useCategoryStore = defineStore("category", () => {
     try {
       isProcessing.value = true;
       const formData = new FormData();
-
+      formData.append('name', payload.name);
       if (payload.image instanceof File) {
         formData.append('image', payload.image);
       }
 
-      if (payload.name) {
-        formData.append('name', payload.name);
-      }
-
-      Object.keys(payload).forEach(key => {
-        if (key !== 'image' && key !== 'name' && payload[key] !== undefined) {
-          formData.append(key, payload[key]);
-        }
-      });
+      // Add this for images to work on Update
+      formData.append('_method', 'PUT');
 
       const res = await api.post(`/api/categories/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return res.data;
     } catch (err) {
-      console.log(err);
+      console.error("Edit Error:", err);
+      throw err; // THIS IS IMPORTANT
     } finally {
       isProcessing.value = false;
     }
@@ -106,21 +75,15 @@ export const useCategoryStore = defineStore("category", () => {
       const res = await api.delete(`/api/categories/${id}`);
       return res.data;
     } catch (err) {
-      console.log(err);
+      console.error("Delete Error:", err);
+      throw err;
     } finally {
       isProcessing.value = false;
     }
   };
 
   return {
-    categories,
-    isLoading,
-    isProcessing,
-    category,
-    fetchCategories,
-    fetchCategoryById,
-    createCategory,
-    editCategory,
-    deleteCategory,
+    categories, isLoading, isProcessing, category,
+    fetchCategories, createCategory, editCategory, deleteCategory,
   };
 });

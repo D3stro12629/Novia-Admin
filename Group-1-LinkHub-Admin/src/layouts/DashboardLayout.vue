@@ -19,6 +19,10 @@ const isSidebarOpen = ref(true);
 </template>
 
 <style>
+/* Ensure the confirmation modal is above the profile modal */
+:deep(.confirm-modal-backdrop) {
+    z-index: 10000 !important; /* One level higher than your 9999 */
+}
 /* 1. Global reset to prevent any hidden margins from causing overflow */
 html,
 body {
