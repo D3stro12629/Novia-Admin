@@ -57,7 +57,7 @@ onMounted(() => {
                 <div class="brand-logo">
                     <span class="material-icons">rocket_launch</span>
                 </div>
-                <span class="brand-name">NOVIA</span>
+                <span class="brand-name">Connexion</span>
             </div>
         </div>
 

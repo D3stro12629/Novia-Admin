@@ -6,6 +6,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const isLoading = ref(false);
   const error = ref(null);
 
+  // Raw data from API
   const skills = ref([]);
   const subjects = ref([]);
   const schools = ref([]);
@@ -14,6 +15,30 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const users = ref([]);
   const usersTotal = ref(0);
 
+  // --- FILTER LOGIC: LAST 7 DAYS ---
+  const isWithinLastWeek = (dateString) => {
+    if (!dateString) return false;
+    const itemDate = new Date(dateString);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    return itemDate >= oneWeekAgo;
+  };
+
+  const sortNewest = (arr) => {
+    return [...arr]
+      .filter((i) => isWithinLastWeek(i.created_at))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  };
+
+  // Computed Recent Lists (Filtered to 1 week)
+  const recentCategories = computed(() => sortNewest(categories.value));
+  const recentSkills = computed(() => sortNewest(skills.value));
+  const recentSubjects = computed(() => sortNewest(subjects.value));
+  const recentSchools = computed(() => sortNewest(schools.value));
+  const recentDegrees = computed(() => sortNewest(degrees.value));
+  const newestUsers = computed(() => sortNewest(users.value));
+
+  // --- STATS & CHARTS ---
   const barChartData = computed(() => [
     { label: "Skills", height: skills.value.length || 0 },
     { label: "Schools", height: schools.value.length || 0 },
@@ -23,48 +48,14 @@ export const useDashboardStore = defineStore("dashboard", () => {
     { label: "Users", height: usersTotal.value || 0 },
   ]);
 
-  const progressData = computed(() => [
-    { label: "Skills Goal", value: Math.min(Math.round((skills.value.length / 50) * 100), 100) },
-    { label: "Schools Goal", value: Math.min(Math.round((schools.value.length / 20) * 100), 100) },
-    { label: "Degrees Goal", value: Math.min(Math.round((degrees.value.length / 10) * 100), 100) },
-    { label: "Subjects Goal", value: Math.min(Math.round((subjects.value.length / 30) * 100), 100) },
-    { label: "Users Goal", value: Math.min(Math.round((usersTotal.value / 100) * 100), 100) },
-  ]);
-
-  const summaryData = computed(() => {
-    const total = skills.value.length + schools.value.length + degrees.value.length + subjects.value.length + categories.value.length + usersTotal.value;
-    return {
-      dataAccuracy: "100%", // Logic can be added later
-      totalRecords: total > 1000 ? (total / 1000).toFixed(1) + 'k' : total.toString(),
-      totalUsers: usersTotal.value.toString(),
-    };
-  });
-
   const statCardsData = computed(() => [
-    { label: "Total Users", value: usersTotal.value, change: 9.4, icon: "bi-people-fill", iconBg: "blue" },
-    { label: "Total Skills", value: skills.value.length, change: 12.5, icon: "bi-lightbulb-fill", iconBg: "purple" },
-    { label: "Total Schools", value: schools.value.length, change: 8.2, icon: "bi-building-fill", iconBg: "green" },
-    { label: "Total Degrees", value: degrees.value.length, change: 3.1, icon: "bi-mortarboard-fill", iconBg: "yellow" },
-    { label: "Total Categories", value: categories.value.length, change: 15.3, icon: "bi-folder-fill", iconBg: "orange" },
+    { label: "Total Users", value: usersTotal.value, icon: "bi-people-fill", iconColor: "#3b82f6" },
+    { label: "Total Skills", value: skills.value.length, icon: "bi-lightbulb-fill", iconColor: "#a855f7" },
+    { label: "Total Schools", value: schools.value.length, icon: "bi-building-fill", iconColor: "#10b981" },
+    { label: "Total Degrees", value: degrees.value.length, icon: "bi-mortarboard-fill", iconColor: "#f59e0b" },
+    { label: "Total Categories", value: categories.value.length, icon: "bi-folder-fill", iconColor: "#06b6d4" },
+    { label: "Total Subjects", value: subjects.value.length, icon: "bi-book-half", iconColor: "#f97316" }
   ]);
-
-  const userStats = computed(() => {
-    const totalUsers = usersTotal.value;
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newUsers = users.value.filter((u) => new Date(u.created_at) > thirtyDaysAgo).length;
-    return {
-      totalUsers,
-      newUsers,
-    };
-  });
-
-  const newestUsers = computed(() => {
-    return [...users.value]
-      .filter((u) => u && u.created_at)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 5);
-  });
 
   const quickActionsData = [
     { label: "Add Skill", sub: "Create new skill", icon: "bi-lightbulb" },
@@ -96,8 +87,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
       users.value = usersRes.data?.data || usersRes.data?.data?.data || usersRes.data || [];
       usersTotal.value = usersRes.data?.total || usersRes.data?.data?.total || users.value.length || 0;
     } catch (err) {
-      console.error("Failed to fetch dashboard data:", err);
-      error.value = err.message || "Failed to load dashboard data";
+      console.error("Dashboard fetch error:", err);
+      error.value = err.message;
     } finally {
       isLoading.value = false;
     }
@@ -106,21 +97,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
   return {
     isLoading,
     error,
-    skills,
-    subjects,
-    schools,
-    degrees,
-    categories,
-    users,
-    usersTotal,
-    barChartData,
-    progressData,
-    summaryData,
-    statCardsData,
-    userStats,
+    recentCategories,
+    recentSkills,
+    recentSubjects,
+    recentSchools,
+    recentDegrees,
     newestUsers,
+    barChartData,
+    statCardsData,
     quickActionsData,
     fetchDashboardData,
   };
 });
-

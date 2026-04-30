@@ -207,7 +207,6 @@
           </div>
         </Transition>
 
-        <!-- DETAILS MODAL -->
         <Transition name="premium-modal">
           <div v-if="showDetailsModal" class="modal-overlay" @click.self="showDetailsModal = false">
             <div class="modal-surface compact-modal">
@@ -289,8 +288,25 @@ onMounted(async () => {
     if (route.query.action === 'create') openCreateModal()
 })
 
-const openCreateModal = () => { isEditing.value = false; form.name = ''; imagePreview.value = null; resetValidation(); showFormModal.value = true }
-const handleEdit = (item) => { isEditing.value = true; selectedItem.value = item; form.name = item.name; imagePreview.value = item.image; showFormModal.value = true }
+const openCreateModal = () => { 
+    isEditing.value = false; 
+    form.name = ''; 
+    form.image = null; // Reset image data
+    imagePreview.value = null; 
+    resetValidation(); 
+    showFormModal.value = true 
+}
+
+const handleEdit = (item) => { 
+    isEditing.value = true; 
+    selectedItem.value = item; 
+    form.name = item.name; 
+    form.image = null; // Keep null unless user chooses a new file
+    imagePreview.value = item.image; 
+    resetValidation();
+    showFormModal.value = true 
+}
+
 const handleView = (item) => { selectedItem.value = item; showDetailsModal.value = true }
 const handleDelete = (item) => { selectedItem.value = item; showDeleteModal.value = true }
 const triggerFileInput = () => fileInput.value?.click()
@@ -299,24 +315,49 @@ const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
     if (file) {
         form.image = file
-        const reader = new FileReader(); reader.onload = (ev) => imagePreview.value = ev.target?.result; reader.readAsDataURL(file)
+        const reader = new FileReader(); 
+        reader.onload = (ev) => imagePreview.value = ev.target?.result; 
+        reader.readAsDataURL(file)
     }
 }
 
+// FIXED: Use FormData for real file uploads
 const saveCategory = async () => {
     if (!validateAll()) return
-    const payload = { name: form.name }
-    if (form.image instanceof File) payload.image = form.image
+
+    const payload = {
+        name: form.name,
+        image: form.image 
+    }
+
     try {
-        isEditing.value ? await categoryStore.editCategory(selectedItem.value.id, payload) : await categoryStore.createCategory(payload)
-        showFormModal.value = false; await categoryStore.fetchCategories({ force: true }); toast.success('Saved')
-    } catch { toast.error('Failed') }
+        if (isEditing.value) {
+            await categoryStore.editCategory(selectedItem.value.id, payload)
+            toast.success('Category updated successfully')
+        } else {
+            if (!form.image) {
+                toast.error('Please select an image')
+                return
+            }
+            await categoryStore.createCategory(payload)
+            toast.success('Category created successfully')
+        }
+        
+        showFormModal.value = false
+        await categoryStore.fetchCategories({ force: true })
+    } catch (err) {
+        const errorMsg = err.response?.data?.message || 'Something went wrong'
+        toast.error('Error: ' + errorMsg)
+        console.error("API Error:", err)
+    }
 }
 
 const confirmDelete = async () => {
     try {
         await categoryStore.deleteCategory(selectedItem.value.id)
-        showDeleteModal.value = false; await categoryStore.fetchCategories({ force: true }); toast.success('Deleted')
+        showDeleteModal.value = false; 
+        await categoryStore.fetchCategories({ force: true }); 
+        toast.success('Deleted')
     } catch { toast.error('Error') }
 }
 
