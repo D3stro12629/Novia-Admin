@@ -753,11 +753,12 @@ onUnmounted(() => document.body.style.overflow = '')
 .btn-primary,
 .btn-secondary,
 .btn-danger {
+  flex: 1;
   padding: 0.8rem;
   border-radius: 12px;
+  border: none;
   font-weight: 700;
   cursor: pointer;
-  border: none;
   transition: 0.2s;
 }
 
@@ -809,7 +810,7 @@ onUnmounted(() => document.body.style.overflow = '')
 .modal-footer-refined {
   display: flex;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .full-width {
