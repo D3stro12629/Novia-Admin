@@ -54,9 +54,12 @@ onMounted(() => {
             </button>
             
             <div class="brand">
-                <div class="brand-logo">
-                    <span class="material-icons">rocket_launch</span>
-                </div>
+                <img src="../../../src/assets/logo2.png" alt="" class="brand-logo">
+                <!-- <div class="brand-logo"> -->
+                    <!-- logo image -->
+                        <!-- <span class="material-icons">rocket_launch</span> -->
+                    <!-- <span class="material-icons"><img src="../../../src/assets/logo.jpg" class="material-icons" alt=""></span> -->
+                <!-- </div> -->
                 <span class="brand-name">Connexion</span>
             </div>
         </div>
@@ -127,17 +130,13 @@ onMounted(() => {
 }
 
 .brand-logo {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    object-fit: cover;
 }
 
-.brand-logo .material-icons { font-size: 20px; }
+/* .brand-logo .material-icons { font-size: 20px; } */
 
 .brand-name {
     color: #ffffff;
