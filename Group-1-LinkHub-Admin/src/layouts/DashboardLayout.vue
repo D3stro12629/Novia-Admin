@@ -12,7 +12,7 @@ const isSidebarOpen = ref(true);
         <div class="body-wrapper">
             <Sidebar :isOpen="isSidebarOpen" />
             <main class="main-content">
-                <slot />
+                <slot/>
             </main>
         </div>
     </div>
