@@ -14,13 +14,13 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/Login/LoginView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, title: 'Login' }
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Dashboard' }
     },
     {
       path: '/profile',
@@ -32,7 +32,7 @@ const router = createRouter({
       path: '/category',
       name: 'category',
       component: () => import('../views/CategoryView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Category' }
     },
     {
       path: '/degrees',
@@ -44,13 +44,13 @@ const router = createRouter({
       path: '/schools',
       name: 'schools',
       component: () => import('../views/SchoolView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Schools' }
     },
     {
       path: '/skills',
       name: 'skills',
       component: () => import('../views/SkillView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Skills' }
     },
     {
       path: '/subjects',
@@ -62,19 +62,19 @@ const router = createRouter({
       path: '/users',
       name: 'users',
       component: () => import('../views/UserView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Users' }
     },
     {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'About' }
     },
     {
       path: '/help',
       name: 'help',
       component: () => import('../views/HelpView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Help' }
     },
     // 404 Not Found Page
     {
@@ -93,6 +93,7 @@ const router = createRouter({
  * 2. If trying to access Login while already having a token -> Redirect to Dashboard
  */
 router.beforeEach((to, from, next) => {
+  document.title = to.meta.title || 'Admin Dashboard';
   const authStore = useAuthStore()
   
   // Check token from store or localStorage (for persistence on refresh)
